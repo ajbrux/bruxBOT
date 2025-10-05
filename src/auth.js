@@ -22,20 +22,22 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 }
 
 //login and show Twitch authorize link
-app.get() => {
-    const u = new URL(//twitch authorize link//)
+app.get('/login', (_req, res) => {
+    const u = new URL('https://id.twitch.tv/oauth2/authorize')
     u.searchParams.set('client_id', CLIENT_ID);
     u.searchParams.set('redirect_uri', REDIRECT_URI);
-    u.searchParams.set('response_type',);
-    u.searchParams.set('scope',);
-    res.send(//authorize with twitch//)
-
-}
+    u.searchParams.set('response_type', 'code');
+    u.searchParams.set('scope', );
+    res.send(' <a href="${u.toString()}"> click to authorize </a> ')
+});
 
 //callback exchanges
+app.get('/callback',
 
+)
 
 
 
 
 //start local server, open browser
+app.listen(port, )
