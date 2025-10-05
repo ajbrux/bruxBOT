@@ -40,4 +40,9 @@ app.get('/callback',
 
 
 //start local server, open browser
-app.listen(port, )
+app.listen(
+    port, async () => {
+    try {await open('http://localhost:${port}/login')
+    catch {}
+    }}
+);
