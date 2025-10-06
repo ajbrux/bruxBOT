@@ -4,7 +4,7 @@ import express from 'express';
 import open from 'open';
 
 //load .env.auth
-dotenv.config({ path: '.env.auth' });
+dotenv.config({ path: ".env.auth" });
 
 //variables
 const app = express();
@@ -16,7 +16,7 @@ const REDIRECT_URI = process.env.TWITCH_REDIRECT_URI;
 const SCOPES = (process.env.TWITCH_SCOPES || 'chat:read chat:edit').split(/\s+/);
 
 if (!CLIENT_ID || !CLIENT_SECRET) {
-    console.error('client creds are fucked, yo);
+    console.error('client creds are fucked, yo');
     process.exit(1);
 
 }
@@ -40,7 +40,7 @@ app.get(
         return res.status(400).send('token exchange failed');
 
     try {
-    const tokenRes = await fetch(, {
+    const tokenRes = await fetch({
         method:     'POST',
         headers:    {'Content-Type': 'application/x-www-form-urlencoded'},
         body:       new URLSearchParams ({
@@ -53,14 +53,17 @@ app.get(
 
     //!tokens => kick error
     const data = await tokenRes.json();
-    try (!tokenRes.ok) {
+    if (!tokenRes.ok) {
         console.error('tokens are fucked, yo', data);
         return res.status(500).send('fucked tokens');
     }
 
     //token to console
-    console.log('ACCESS TOKEN: ${data.access_token}' );
-    console.log('REFRESH TOKEN: ${data.refresh_token}' );
+//    console.log('ACCESS TOKEN: ${data.access_token}' );
+//    console.log('REFRESH TOKEN: ${data.refresh_token}' );
+
+    console.log('ACCESS TOKEN: SUCCESS' );
+    console.log('REFRESH TOKEN: SUCCESS' );
 
     //token to local host
     res.send(`
@@ -80,9 +83,9 @@ app.get(
 //start local server, open browser
 app.listen(
     port, async () => {
-    try {await open('http://localhost:${port}/login')
-    catch {}
-    }}
+        try {await open('http://localhost:${port}/login');
+        } catch {}
+    }
 );
 
 
