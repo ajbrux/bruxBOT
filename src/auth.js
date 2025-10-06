@@ -12,12 +12,12 @@ const port = 3000;
 
 const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const REDIRECT_URI = process.env.TWITCH_REDIRECT_URI || http://localhost:3000/callback;
+const REDIRECT_URI = process.env.TWITCH_REDIRECT_URI;
 const SCOPES = (process.env.TWITCH_SCOPES || 'chat:read chat:edit').split(/\s+/);
 
 if (!CLIENT_ID || !CLIENT_SECRET) {
-    console.error('creds are fucked, yo);
-    process.exit;
+    console.error('client creds are fucked, yo);
+    process.exit(1);
 
 }
 
@@ -32,9 +32,47 @@ app.get('/login', (_req, res) => {
 });
 
 //callback exchanges
-app.get('/callback',
+app.get(
+    '/callback', async (req, res) => {
 
-)
+    const code = res.query.code;
+    if (!code)
+        return res.status(400).send('token exchange failed');
+
+    try {
+    const tokenRes = await fetch(, {
+        method:     'POST',
+        headers:    {'Content-Type': 'application/x-www-form-urlencoded'},
+        body:       new URLSearchParams ({
+                        client_id: CLIENT_ID,
+                        client_secret: CLIENT_SECRET, code,
+                        grant_type: 'authorization_code',
+                        redirect_uri: REDIRECT_URI
+                    })
+    });
+
+    //!tokens => kick error
+    const data = await tokenRes.json();
+    try (!tokenRes.ok) {
+        console.error('tokens are fucked, yo', data);
+        return res.status(500).send('fucked tokens');
+    }
+
+    //token to console
+    console.log('ACCESS TOKEN: ${data.access_token}' );
+    console.log('REFRESH TOKEN: ${data.refresh_token}' );
+
+    //token to local host
+    res.send(`
+        <p>${data.access_token}</p>
+        <p>${data.refresh_token}</p>
+    `);
+
+    } catch (e) {
+        console.error('callback exchanges fucked', e);
+        res.status(500).send('unfuck the callback exchanges');
+    }
+});
 
 
 
