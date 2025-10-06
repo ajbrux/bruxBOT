@@ -4,7 +4,7 @@ import express from 'express';
 import open from 'open';
 
 //load .env.auth
-dotenv.confix({path: '.env.auth'});
+dotenv.config({ path: '.env.auth' });
 
 //variables
 const app = express();
@@ -34,8 +34,8 @@ app.get('/login', (_req, res) => {
 //callback exchanges
 app.get(
     '/callback', async (req, res) => {
+    const code = req.query.code;
 
-    const code = res.query.code;
     if (!code)
         return res.status(400).send('token exchange failed');
 
@@ -84,3 +84,5 @@ app.listen(
     catch {}
     }}
 );
+
+
