@@ -17,13 +17,13 @@ const SCOPES = (process.env.TWITCH_SCOPES || 'chat:read chat:edit').split(/\s+/)
 const TWITCH_AUTHORIZE_URL = 'https://id.twitch.tv/oauth2/authorize';
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 
-/////request logger/////
+            //request logger
             app.use((req, _res, next) => {
                 console.log('[req]', req.method, req.url);
                 next();
             });
 
-/////credential check/////
+            //credential check
             if (!CLIENT_ID || !CLIENT_SECRET) {
                 console.error('client creds are fucked, yo');
                 process.exit(1);
@@ -37,7 +37,7 @@ app.get('/login', (_req, res) => {
     u.searchParams.set('response_type', 'code');
     u.searchParams.set('scope', SCOPES.join(' '));
 
-/////login debug html/////
+            //login debug html
             const debug = {
                 usingRedirectUri: REDIRECT_URI,
                 clientIdPrefix: CLIENT_ID.slice(0, 6),
@@ -58,14 +58,14 @@ app.get('/login', (_req, res) => {
 app.get('/callback', async (req, res) => {
     const code = req.query.code?.toString();
 
-/////callback diagnostic/////
+            //callback diagnostic
             if (!code) {
                 const msg = { error: 'Missing ?code', query: req.query };
                 console.error('[auth] /callback missing code', msg);
                 return res.status(400).send(`<pre>${escapeHtml(JSON.stringify(msg, null, 2))}</pre>`);
             }
 
-/////outgoing debug
+            //outgoing debug
             const outgoing = {
                 clientIdPrefix: CLIENT_ID.slice(0, 6),
                 clientIdLength: CLIENT_ID.length,
@@ -99,7 +99,7 @@ const resp = await fetch(TWITCH_TOKEN_URL, {
     body: form,
 });
 
-/////incoming debug/////
+            //incoming debug
             const raw = await resp.text();
             let data; try { data = JSON.parse(raw); } catch { data = { raw }; }
 
@@ -113,7 +113,7 @@ const resp = await fetch(TWITCH_TOKEN_URL, {
 
             console.log('[auth] incoming token response', details);
 
-/////error response/////
+            //error response
             if (!resp.ok) {
                 return res
                     .status(500)
@@ -130,7 +130,7 @@ return res.send(`
     <pre>TWITCH_OAUTH_TOKEN=oauth:${data.access_token}</pre>
     <pre>REFRESH_TOKEN=${data.refresh_token}</pre>
 
-/////debug to html/////
+            //debug to html
             <details open><summary>details</summary><pre>${escapeHtml(JSON.stringify(details, null, 2))}</pre></details>
 
 `);
