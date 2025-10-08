@@ -48,7 +48,7 @@ client.on('connected', (addr, port) => {
     console.log(`bruxBOT is connected to ${addr}:${port}, listening in #${channel} as ${username}`);
 });
 client.on('reconnect', () => console.log('bruxBOT is reconnecting...'));
-client.on('disconnected', (reason) => console.log(`[bot] disconnected: ${reason}`));
+client.on('disconnected', (reason) => console.log(`bruxBOT disconnected: ${reason}`));
 client.connect().catch(err => {
     console.error('bruxBOT failed to connect:', err?.message || err);
     process.exit(1);
