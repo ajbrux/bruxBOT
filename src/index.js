@@ -41,3 +41,15 @@ client.on('message', async (_chan, tags, message, self) => {
 //print to terminal
 const name = tags['display-name'] || tags.username || 'unknown';
 console.log(`${name}: ${message}`);
+});
+
+//lifecycle logs
+client.on('connected', (addr, port) => {
+    console.log(`bruxBOT is connected to ${addr}:${port}, listening in #${channel} as ${username}`);
+});
+client.on('reconnect', () => console.log('bruxBOT is reconnecting...'));
+client.on('disconnected', (reason) => console.log(`[bot] disconnected: ${reason}`));
+client.connect().catch(err => {
+    console.error('bruxBOT failed to connect:', err?.message || err);
+    process.exit(1);
+});
