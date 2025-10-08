@@ -29,13 +29,11 @@ client.on('message', async (_chan, tags, message, self) => {
 //!emoji alerts
 
 
-
 //listen for raid
-
-
+client.on('raided', async (_chan, raider, viewers) => {
+    console.log(`${raider} raiding with ${viewers}`);
 
 //raid alert
-
 
 
 //print to terminal
