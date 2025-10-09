@@ -6,6 +6,7 @@ import sound from 'sound-play';
 import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
 import { MessageHandler } from './handlers/messageHandler.js';
+import { RaidHandler } from './hadlers/raidHandler.js';
 
 
 //read config from .env
@@ -50,60 +51,31 @@ for (const file of raidFiles) {
 }
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
-
 const soundManager = new SoundManager(SOUND_MAP);
 MessageHandler(client, soundManager);
-
-        /*
-        //message handler
-        client.on('message', async (_chan, tags, message, self) => {
-            if (self) return;
-
-            //print to terminal
-            const name = tags['display-name'] || tags.username || 'unknown';
-            console.log(`${name}: ${message}`);
-
-            //!sound alerts
-            const text = message.trim().toLowerCase();
-            if (!text.startsWith('!')) return;
-            const commandCall = text.slice(1);
-            const soundPath = SOUND_MAP[commandCall];
-
-            if (soundPath) {
-            try {
-                sound.play(soundPath).catch(() => {});
-                console.log('played sound:', soundPath);
-            } catch (err) {
-                console.log('play_failed:', err);
-            }
-            } else {
-            console.log('unknown command:', commandCall);
-            }
-        });
-        */
-
+RaidHandler(client, RAIDS_MAP);
 
 //!emoji alerts
 
+        /*
+        //listen for raid
+        client.on('raided', async (_chan, raider, viewers) => {
+            console.log(`${raider} raiding with ${viewers}`);
 
-
-//listen for raid
-client.on('raided', async (_chan, raider, viewers) => {
-    console.log(`${raider} raiding with ${viewers}`);
-
-    //raid alert
-    const raidSound = RAIDS_MAP[raider.toLowerCase() ] || RAIDS_MAP['raid'];
-    if (raidSound) {
-        try {
-            sound.play(raidSound).catch(() => {});
-            console.log('played raid sound:', raidSound);
-        } catch (err) {
-            console.log('raid_play_failed:', err);
-        }
-    } else {
-        console.log('missing raid sound: raid.mp3 or raid.wav');
-    }
-});
+            //raid alert
+            const raidSound = RAIDS_MAP[raider.toLowerCase() ] || RAIDS_MAP['raid'];
+            if (raidSound) {
+                try {
+                    sound.play(raidSound).catch(() => {});
+                    console.log('played raid sound:', raidSound);
+                } catch (err) {
+                    console.log('raid_play_failed:', err);
+                }
+            } else {
+                console.log('missing raid sound: raid.mp3 or raid.wav');
+            }
+        });
+        */
 
 //ad warning
 

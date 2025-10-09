@@ -17,19 +17,6 @@ export function MessageHandler(client, soundManager) {
     const commandCall = text.slice(1);
 
     soundManager.playSound(commandCall)
-            /*
-            const soundPath = SOUND_MAP[commandCall];
 
-            if (soundPath) {
-            try {
-                sound.play(soundPath).catch(() => {});
-                console.log('played sound:', soundPath);
-            } catch (err) {
-                console.log('play_failed:', err);
-            }
-            } else {
-            console.log('unknown command:', commandCall);
-            }
-            */
   });
 }
