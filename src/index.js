@@ -26,6 +26,41 @@ client.on('message', async (_chan, tags, message, self) => {
     if (self) return;
 
 //!sound alerts
+
+    //map the sound directory
+    const SOUND_DIR = path.resolve('assets', 'sounds');
+    const SOUND_MAP = {};
+
+    const files = fs.readdirSync(SOUND_DIR);
+    for (const file of files) {
+        const soundPath = file.toLowerCase();
+        if (soundPath.endsWith('.mp3') || soundPath.endsWith('.wav')) {
+            const command = soundPath.replace('.mp3', '').replace('.wav', '');
+            SOUND_MAP[command] = path.join(SOUND_DIR, file);
+        }
+    }
+
+    console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
+
+    //!command to sound flow
+    const text = message.trim().toLowerCase();
+    if (!text.startsWith('!')) return;          // only look at !commands
+    const commandCall = text.slice(1);                  // drop the "!"
+    const soundPath = SOUND_MAP[command];           // look up the command in the map
+
+
+    if (soundPath) {
+    try {
+      sound.play(soundPath).catch(() => {});
+      console.log('played sound:', soundPath);
+    } catch (err) {
+      console.log('play_failed:', err);
+    }
+    } else {
+    console.log('unknown command:', command);
+    }
+
+    /*
     const text = message.trim().toLowerCase();
 
     if (text === '!alert') {
@@ -43,6 +78,7 @@ client.on('message', async (_chan, tags, message, self) => {
             console.log('missing file: alert.mp3');
         }
     }
+    */
 
 //print to terminal
     const name = tags['display-name'] || tags.username || 'unknown';
@@ -50,31 +86,16 @@ client.on('message', async (_chan, tags, message, self) => {
 });
 
 
-
-
-
-
-
 //!emoji alerts
-
 
 
 //listen for raid
 
 
-
 //raid alert
 
 
-
 //ad warning
-
-
-
-
-
-
-
 
 
 //lifecycle logs
