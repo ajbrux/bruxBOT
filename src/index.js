@@ -1,6 +1,9 @@
 //src/index.js
 import 'dotenv/config';
 import tmi from 'tmi.js';
+import path from 'node:path';
+import fs from 'node:fs';
+import sound from 'sound-play';
 
 //read config from .env
 const username = process.env.TWITCH_BOT_USERNAME;
@@ -22,8 +25,35 @@ const client = new tmi.Client({
 client.on('message', async (_chan, tags, message, self) => {
     if (self) return;
 
-
 //!sound alerts
+    const text = message.trim().toLowerCase();
+
+    if (text === '!alert') {
+        const SOUND_DIR = path.resolve('assets', 'sounds');
+        const alertPath = path.join(SOUND_DIR, 'alert.mp3');
+
+        if (fs.existsSync(alertPath)) {
+            try {
+                sound.play(alertPath).catch(() => {});
+                console.log('played sound: alert.mp3');
+            } catch (err) {
+                console.log('play_failed:', err);
+            }
+        } else {
+            console.log('missing file: alert.mp3');
+        }
+    }
+
+
+//print to terminal
+const name = tags['display-name'] || tags.username || 'unknown';
+console.log(`${name}: ${message}`);
+});
+
+
+
+
+
 
 
 //!emoji alerts
@@ -38,16 +68,21 @@ client.on('message', async (_chan, tags, message, self) => {
 
 
 
-//print to terminal
-const name = tags['display-name'] || tags.username || 'unknown';
-console.log(`${name}: ${message}`);
-});
+//ad warning
+
+
+
+
+
+
+
+
 
 //lifecycle logs
 client.on('connected', (addr, port) => {
-    console.log(`bruxBOT is connected to ${addr}:${port}, listening in #${channel} as ${username}`);
+    console.log(`bruxBOT connected to ${addr}:${port}, listening in #${channel} as ${username}`);
 });
-client.on('reconnect', () => console.log('bruxBOT is reconnecting...'));
+client.on('reconnect', () => console.log('bruxBOT reconnecting...'));
 client.on('disconnected', (reason) => console.log(`bruxBOT disconnected: ${reason}`));
 client.connect().catch(err => {
     console.error('bruxBOT failed to connect:', err?.message || err);
