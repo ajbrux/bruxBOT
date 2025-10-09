@@ -46,7 +46,7 @@ client.on('message', async (_chan, tags, message, self) => {
     const text = message.trim().toLowerCase();
     if (!text.startsWith('!')) return;          // only look at !commands
     const commandCall = text.slice(1);                  // drop the "!"
-    const soundPath = SOUND_MAP[command];           // look up the command in the map
+    const soundPath = SOUND_MAP[commandCall];           // look up the command in the map
 
 
     if (soundPath) {
@@ -57,7 +57,7 @@ client.on('message', async (_chan, tags, message, self) => {
       console.log('play_failed:', err);
     }
     } else {
-    console.log('unknown command:', command);
+    console.log('unknown command:', commandCall);
     }
 
     /*
