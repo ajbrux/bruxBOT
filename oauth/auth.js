@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import open from 'open';
 
-dotenv.config({ path: '.env.auth' });
+dotenv.config({ path: 'oauth/.env.auth' });
 
 //variables
 const app = express();
