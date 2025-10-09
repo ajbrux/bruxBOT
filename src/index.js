@@ -1,6 +1,9 @@
 //src/index.js
 import 'dotenv/config';
 import tmi from 'tmi.js';
+import path from 'node:path';
+import fs from 'node:fs';
+import sound from 'sound-play';
 
 //read config from .env
 const username = process.env.TWITCH_BOT_USERNAME;
@@ -18,37 +21,65 @@ const client = new tmi.Client({
     channels: [channel],
 });
 
+//map sound directory
+const SOUND_DIR = path.resolve('assets', 'sounds');
+const SOUND_MAP = {};
+const files = fs.readdirSync(SOUND_DIR);
+for (const file of files) {
+    const soundPath = file.toLowerCase();
+    if (soundPath.endsWith('.mp3') || soundPath.endsWith('.wav')) {
+        const command = soundPath.replace('.mp3', '').replace('.wav', '');
+        SOUND_MAP[command] = path.join(SOUND_DIR, file);
+    }
+}
+console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
+
 //listen for chat
 client.on('message', async (_chan, tags, message, self) => {
     if (self) return;
 
+    //print to terminal
+    const name = tags['display-name'] || tags.username || 'unknown';
+    console.log(`${name}: ${message}`);
 
-//!sound alerts
+    //!sound alerts
+    const text = message.trim().toLowerCase();
+    if (!text.startsWith('!')) return;
+    const commandCall = text.slice(1);
+    const soundPath = SOUND_MAP[commandCall];
+
+    if (soundPath) {
+    try {
+        sound.play(soundPath).catch(() => {});
+        console.log('played sound:', soundPath);
+    } catch (err) {
+        console.log('play_failed:', err);
+    }
+    } else {
+    console.log('unknown command:', commandCall);
+    }
+});
 
 
 //!emoji alerts
 
 
-
 //listen for raid
-
 
 
 //raid alert
 
 
+//ad warning
 
-//print to terminal
-const name = tags['display-name'] || tags.username || 'unknown';
-console.log(`${name}: ${message}`);
-});
 
 //lifecycle logs
 client.on('connected', (addr, port) => {
-    console.log(`bruxBOT is connected to ${addr}:${port}, listening in #${channel} as ${username}`);
+    console.log(`bruxBOT connected to ${addr}:${port}, listening in #${channel} as ${username}`);
 });
-client.on('reconnect', () => console.log('bruxBOT is reconnecting...'));
+client.on('reconnect', () => console.log('bruxBOT reconnecting...'));
 client.on('disconnected', (reason) => console.log(`bruxBOT disconnected: ${reason}`));
+
 client.connect().catch(err => {
     console.error('bruxBOT failed to connect:', err?.message || err);
     process.exit(1);
