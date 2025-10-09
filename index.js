@@ -1,9 +1,11 @@
 //src/index.js
-import 'dotenv/config';
 import tmi from 'tmi.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import sound from 'sound-play';
+import 'dotenv/config';
+import { MessageHandler } from './handlers/messageHandler.js';
+
 
 //read config from .env
 const username = process.env.TWITCH_BOT_USERNAME;
@@ -47,31 +49,35 @@ for (const file of raidFiles) {
 }
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
-//message handler
-client.on('message', async (_chan, tags, message, self) => {
-    if (self) return;
+MessageHandler(client, SOUND_MAP);
 
-    //print to terminal
-    const name = tags['display-name'] || tags.username || 'unknown';
-    console.log(`${name}: ${message}`);
+        /*
+        //message handler
+        client.on('message', async (_chan, tags, message, self) => {
+            if (self) return;
 
-    //!sound alerts
-    const text = message.trim().toLowerCase();
-    if (!text.startsWith('!')) return;
-    const commandCall = text.slice(1);
-    const soundPath = SOUND_MAP[commandCall];
+            //print to terminal
+            const name = tags['display-name'] || tags.username || 'unknown';
+            console.log(`${name}: ${message}`);
 
-    if (soundPath) {
-    try {
-        sound.play(soundPath).catch(() => {});
-        console.log('played sound:', soundPath);
-    } catch (err) {
-        console.log('play_failed:', err);
-    }
-    } else {
-    console.log('unknown command:', commandCall);
-    }
-});
+            //!sound alerts
+            const text = message.trim().toLowerCase();
+            if (!text.startsWith('!')) return;
+            const commandCall = text.slice(1);
+            const soundPath = SOUND_MAP[commandCall];
+
+            if (soundPath) {
+            try {
+                sound.play(soundPath).catch(() => {});
+                console.log('played sound:', soundPath);
+            } catch (err) {
+                console.log('play_failed:', err);
+            }
+            } else {
+            console.log('unknown command:', commandCall);
+            }
+        });
+        */
 
 
 //!emoji alerts
