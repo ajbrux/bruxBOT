@@ -21,11 +21,11 @@ const client = new tmi.Client({
     channels: [channel],
 });
 
-//map sound directory
+//map sounds directory
 const SOUND_DIR = path.resolve('assets', 'sounds');
 const SOUND_MAP = {};
-const files = fs.readdirSync(SOUND_DIR);
-for (const file of files) {
+const soundFiles = fs.readdirSync(SOUND_DIR);
+for (const file of soundFiles) {
     const soundPath = file.toLowerCase();
     if (soundPath.endsWith('.mp3') || soundPath.endsWith('.wav')) {
         const command = soundPath.replace('.mp3', '').replace('.wav', '');
@@ -34,7 +34,20 @@ for (const file of files) {
 }
 console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
 
-//listen for chat
+//map raids directory
+const RAIDS_DIR = path.resolve('assets', 'raids');
+const RAIDS_MAP = {};
+const raidFiles = fs.readdirSync(RAIDS_DIR);
+for (const file of raidFiles) {
+    const raidsPath = file.toLowerCase();
+    if (raidsPath.endsWith('.mp3') || raidsPath.endsWith('.wav')) {
+        const raid = raidsPath.replace('.mp3', '').replace('.wav', '');
+        RAIDS_MAP[raid] = path.join(RAIDS_DIR, file);
+    }
+}
+console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
+
+//message handler
 client.on('message', async (_chan, tags, message, self) => {
     if (self) return;
 
@@ -64,11 +77,24 @@ client.on('message', async (_chan, tags, message, self) => {
 //!emoji alerts
 
 
+
 //listen for raid
+client.on('raided', async (_chan, raider, viewers) => {
+    console.log(`${raider} raiding with ${viewers}`);
 
-
-//raid alert
-
+    //raid alert
+    const raidSound = RAIDS_MAP[raider.toLowerCase() ] || RAIDS_MAP['raid'];
+    if (raidSound) {
+        try {
+            sound.play(raidSound).catch(() => {});
+            console.log('played raid sound:', raidSound);
+        } catch (err) {
+            console.log('raid_play_failed:', err);
+        }
+    } else {
+        console.log('missing raid sound: raid.mp3 or raid.wav');
+    }
+});
 
 //ad warning
 
