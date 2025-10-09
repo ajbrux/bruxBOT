@@ -4,6 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import sound from 'sound-play';
 import 'dotenv/config';
+import { SoundManager } from './managers/soundManager.js';
 import { MessageHandler } from './handlers/messageHandler.js';
 
 
@@ -49,7 +50,9 @@ for (const file of raidFiles) {
 }
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
-MessageHandler(client, SOUND_MAP);
+
+const soundManager = new SoundManager(SOUND_MAP);
+MessageHandler(client, soundManager);
 
         /*
         //message handler
