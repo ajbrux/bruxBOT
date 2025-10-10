@@ -6,7 +6,7 @@ import sound from 'sound-play';
 import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
 import { MessageHandler } from './handlers/messageHandler.js';
-import { RaidHandler } from './hadlers/raidHandler.js';
+import { RaidHandler } from './handlers/raidHandler.js';
 
 
 //read config from .env
