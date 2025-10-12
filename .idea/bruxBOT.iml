@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/handlers" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/oauth" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/managers" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
