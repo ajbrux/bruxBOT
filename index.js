@@ -52,7 +52,9 @@ for (const file of raidFiles) {
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
 const soundManager = new SoundManager(SOUND_MAP);
+
 MessageHandler(client, soundManager);
+
 RaidHandler(client, RAIDS_MAP);
 
 //!emoji alerts
@@ -84,7 +86,9 @@ RaidHandler(client, RAIDS_MAP);
 client.on('connected', (addr, port) => {
     console.log(`bruxBOT connected to ${addr}:${port}, listening in #${channel} as ${username}`);
 });
+
 client.on('reconnect', () => console.log('bruxBOT reconnecting...'));
+
 client.on('disconnected', (reason) => console.log(`bruxBOT disconnected: ${reason}`));
 
 client.connect().catch(err => {
