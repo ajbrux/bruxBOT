@@ -19,8 +19,8 @@ export class EventSubManager extends EventEmitter {
 
         this.ws.on('open', () => console.log('EventSub WebSocket connected') );
         this.ws.on('close', () => console.log('EventSub WebSocket disconnected') );
-        this.ws.on('error', (err) => console.log('EventSub WebSocket error') );
         this.ws.on('error', (err) => console.error('EventSub WebSocket error:', err));
+        this.ws.on('message', (data) => this.eventMessageHandler(data));
     }
 
     async eventMessageHandler(data) {
@@ -42,12 +42,13 @@ export class EventSubManager extends EventEmitter {
             this.emit('ready', this.sessionID);
         }
 
-        //notification
-        if (metadata?.message_type === 'notification') {
-            const type = payload?.subscription?.type;
-            const event = payload?.event;
-            console.log('bruxBOT received notification type: ${type}');
-        }
+    //notification
+    if (metadata?.message_type === 'notification') {
+        const type = payload?.subscription?.type;
+        const event = payload?.event;
+        console.log(`bruxBOT received notification type: ${type}`);
+        this.emit(type, event);
+    }
 
         //session_keepalive
         if (metadata?.message_type === 'session_keepalive') {
