@@ -1,4 +1,4 @@
-//eventSubManager
+// eventSubManager.js
 import WebSocket from 'ws';
 import fetch from 'node-fetch';
 import EventEmitter from 'events';
@@ -20,15 +20,15 @@ export class EventSubManager extends EventEmitter {
         this.ws.on('open', () => console.log('EventSub WebSocket connected') );
         this.ws.on('close', () => console.log('EventSub WebSocket disconnected') );
         this.ws.on('error', (err) => console.log('EventSub WebSocket error') );
-        this.ws.on('message', (data) => this.eventMessageHandler(data) );
+        this.ws.on('error', (err) => console.error('EventSub WebSocket error:', err));
     }
 
     async eventMessageHandler(data) {
         let event_message;
-        try{
+        try {
             event_message = JSON.parse(data);
         } catch {
-            console.warn('uh oh');
+            console.warn('uh oh — bad JSON:', data);
             return;
         }
 
@@ -55,38 +55,42 @@ export class EventSubManager extends EventEmitter {
         }
     }
 
-    //verify ws open
     async subscribe(eventType, version = '1') {
         if (!this.sessionID) {
             console.error('bruxBOT must wait for open WebSocket');
+            return;
         }
 
-        console.log ('bruxBOT subscribing to ${eventType'...);
+        console.log(`bruxBOT subscribing to ${eventType}...`);
 
+        try {
         const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
             method: 'POST',
             headers: {
-                'Client-ID': this.clientID,
-                'Authorization': `Bearer ${this.token}`,
-                'Content-Type': 'application/json',
+            'Client-ID': this.sessionID,
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 type: eventType,
                 version,
-                condition: { broadcaster_user_id: this.broadcasterID },
+                condition: { broadcaster_user_id: this.sessionID },
                 transport: {
-                  method: 'WebSocket',
-                  session_id: this.sessionID,
+                    method: 'websocket',
+                    session_id: this.sessionID,
                 },
             }),
         });
-    }
 
-    const result = await response.json();
+        const result = await response.json();
 
-    if (!response.ok) {
-        console.error('bruxBOT failed to subscribe to ${eventType}: ', result);
-    } else {
-        console.log('bruxBOT subscribed to ${eventType}');
+        if (!response.ok) {
+            console.error(`bruxBOT failed to subscribe to ${eventType}:`, result);
+        } else {
+            console.log(`bruxBOT subscribed to ${eventType}`);
+        }
+        } catch (err) {
+            console.error('bruxBOT Subscription network error:', err);
+        }
     }
 }
