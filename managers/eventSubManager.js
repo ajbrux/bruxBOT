@@ -6,7 +6,7 @@ import EventEmitter from 'events';
 
 export class EventSubManager extends EventEmitter {
     constructor(clientID, token, broadcasterID) {
-        this.clientID. = clientID;
+        this.clientID = clientID;
         this.token = token;
         this.broadcasterID = broadcasterID;
         this.ws = null;
@@ -14,13 +14,13 @@ export class EventSubManager extends EventEmitter {
     }
 
     async connect() {
-        console.log('bruxBOT connecting to Twitch EventSub Websocket');
-        this.ws = new Websocket('wss://eventsub.wss.twitch.tv/ws');
+        console.log('bruxBOT connecting to Twitch EventSub WebSocket');
+        this.ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
 
         this.ws.on('open', () => console.log('EventSub WebSocket connected') );
-        this.ws.on('close' () => console.log('EventSub WebSocket disconnected') );
-        this.ws.on('error' () => console.log('EventSub WebSocket error') );
-        this.ws.on('message' (data) => console.log() );
+        this.ws.on('close', () => console.log('EventSub WebSocket disconnected') );
+        this.ws.on('error', (err) => console.log('EventSub WebSocket error') );
+        this.ws.on('message', (data) => this.eventMessageHandler(data) );
     }
 
     async eventMessageHandler(data) {
@@ -36,28 +36,57 @@ export class EventSubManager extends EventEmitter {
 
         //session_welcome
         if (metadata?.message_type === 'session_welcome') {
-            this.sessionId = payload.session.id;
-            console.log('[EventSub] Session ID:', this.sessionId);
+            this.sessionID = payload.session.id;
+            console.log('[EventSub] Session ID:', this.sessionID);
 
-            this.emit('ready', this.sessionId);
+            this.emit('ready', this.sessionID);
         }
 
         //notification
-        if (metadata?.message_type === 'notificatoin') {
+        if (metadata?.message_type === 'notification') {
             const type = payload?.subscription?.type;
             const event = payload?.event;
-            console.log('bruxBOT received notification type: ${type}') = ;
+            console.log('bruxBOT received notification type: ${type}');
         }
 
         //session_keepalive
         if (metadata?.message_type === 'session_keepalive') {
-
             console.log("bruxBOT received notification type: ${type")
         }
     }
 
-        //verify ws open
-        if () {
-            console.error('bruxBOT must wait for open ')
+    //verify ws open
+    async subscribe(eventType, version = '1') {
+        if (!this.sessionID) {
+            console.error('bruxBOT must wait for open WebSocket');
         }
+
+        console.log ('bruxBOT subscribing to ${eventType'...);
+
+        const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+            method: 'POST',
+            headers: {
+                'Client-ID': this.clientID,
+                'Authorization': `Bearer ${this.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: eventType,
+                version,
+                condition: { broadcaster_user_id: this.broadcasterID },
+                transport: {
+                  method: 'WebSocket',
+                  session_id: this.sessionID,
+                },
+            }),
+        });
+    }
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        console.error('bruxBOT failed to subscribe to ${eventType}: ', result);
+    } else {
+        console.log('bruxBOT subscribed to ${eventType}');
+    }
 }
