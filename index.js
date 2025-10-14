@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import sound from 'sound-play';
 import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
-import { MessageHandler } from './handlers/messageHandler.js';
+import { MessageHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
 
 

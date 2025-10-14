@@ -1,10 +1,10 @@
-//handlers/messageHandlers.js
+//handlers/chatHandlers.js
 import sound from 'sound-play';
 
 
-export function MessageHandler(client, soundManager) {
+export function ChatHandler(client, soundManager) {
     client.on('message', async (_chan, tags, message, self) => {
-    const adbreak = 'we are taking a quick ad break. thanks for hanging out.';
+    const adbreak = 'Ad break incoming! Have a stretch and tend to your liquids!';
 
         if (self) return;
 
