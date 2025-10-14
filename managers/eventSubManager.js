@@ -1,81 +1,79 @@
 // eventSubManager.js
-import WebSocket from 'ws';
 import fetch from 'node-fetch';
 import EventEmitter from 'events';
+import { WebSocketConnector } from '../connectors/WebSocketConnector.js';
 
 
 export class EventSubManager extends EventEmitter {
-    constructor(clientID, token, broadcasterID) {
+    constructor(clientID, token, broadcasterID, connector = new WebSocketConnector()) {
         super();
         this.clientID = clientID;
         this.token = token;
         this.broadcasterID = broadcasterID;
-        this.ws = null;
         this.sessionID = null;
+        this.connector = connector;
+        this.connector.setHandlers({
+            onOpen:     () => this.emit('socket_open'),
+            onClose:    (code, reason) => this.emit('socket_close', {code, reason}),
+            onError:    (err) => this.emit('socket_error', err),
+            onMessage:  (data) => this.#handleMessage(data),
+        });
     }
 
-    async connect() {
-        console.log('bruxBOT connecting to Twitch EventSub WebSocket');
-        this.ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
-
-        this.ws.on('open', () => console.log('EventSub WebSocket connected') );
-        this.ws.on('close', () => console.log('EventSub WebSocket disconnected') );
-        this.ws.on('error', (err) => console.error('EventSub WebSocket error:', err));
-        this.ws.on('message', (data) => this.eventMessageHandler(data));
+    connect() {
+        this.connector.connect('wss://eventsub.wss.twitch.tv/ws');
     }
 
-    async eventMessageHandler(data) {
+    #handleMessage(data) {
         let event_message;
         try {
-            event_message = JSON.parse(data);
+            if (typeof data !== "string") {
+                event_message = JSON.parse(data);
+            }
         } catch {
-            console.warn('uh oh — bad JSON:', data);
+            this.emit('bad_json', data);
             return;
         }
 
-    const {metadata, payload} = event_message;
+        const { metadata, payload } = event_message;
+        const em_type = metadata?.message_type;
 
-        //session_welcome
-        if (metadata?.message_type === 'session_welcome') {
-            this.sessionID = payload.session.id;
-            console.log('[EventSub] Session ID:', this.sessionID);
-
-            this.emit('ready', this.sessionID);
-        }
-
-    //notification
-    if (metadata?.message_type === 'notification') {
-        const type = payload?.subscription?.type;
-        const event = payload?.event;
-        console.log(`bruxBOT received notification type: ${type}`);
-        this.emit(type, event);
-    }
-
-        //session_keepalive
-        if (metadata?.message_type === 'session_keepalive') {
-            console.log("bruxBOT received notification type: ${type")
+        switch (em_type) {
+            case 'session_welcome': {}
+            case 'session_keepalive': {}
+            case 'session_reconnect': {}
+            case 'notification': {}
+            case 'revocation': {}
+            default:
+                this.emit("unknown_message",em_type)
         }
     }
+
+
 
     async subscribe(eventType, version = '1') {
+        //checks
         if (!this.sessionID) {
-            console.error('bruxBOT must wait for open WebSocket') return;
+            console.error('bruxBOT must wait for open WebSocket');
+            return;
         }
-
-        console.log(`bruxBOT subscribing to ${eventType}...`);
+        if (!this.clientID || !this.token || !this.brodcasterID) {
+            console.error('bruxBOT has fucked up credentials');
+            return;
+        }
 
         try {
         const response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
             method: 'POST',
             headers: {
-            'Client-ID': this.sessionID,
+            'Client-ID': this.clientID,
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 type: eventType,
                 version,
-                condition: { broadcaster_user_id: this.sessionID },
+                condition: { broadcaster_user_id: this.broadcasterID },
                 transport: {
                     method: 'websocket',
                     session_id: this.sessionID,

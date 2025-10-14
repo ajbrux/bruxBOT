@@ -8,7 +8,6 @@ export class WebSocketConnector {
         this.url = null;
         this.backoffMs = backoffMs;
         this.handlers = { onOpen: null, onClose: null, onError: null, onMessage: null };
-
     }
 
     setHandlers({ onOpen, onClose, onError, onMessage }) {
