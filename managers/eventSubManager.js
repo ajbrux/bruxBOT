@@ -6,6 +6,7 @@ import EventEmitter from 'events';
 
 export class EventSubManager extends EventEmitter {
     constructor(clientID, token, broadcasterID) {
+        super();
         this.clientID = clientID;
         this.token = token;
         this.broadcasterID = broadcasterID;
@@ -58,8 +59,7 @@ export class EventSubManager extends EventEmitter {
 
     async subscribe(eventType, version = '1') {
         if (!this.sessionID) {
-            console.error('bruxBOT must wait for open WebSocket');
-            return;
+            console.error('bruxBOT must wait for open WebSocket') return;
         }
 
         console.log(`bruxBOT subscribing to ${eventType}...`);
