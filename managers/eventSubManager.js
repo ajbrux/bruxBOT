@@ -39,13 +39,41 @@ export class EventSubManager extends EventEmitter {
         const em_type = metadata?.message_type;
 
         switch (em_type) {
-            case 'session_welcome': {}
-            case 'session_keepalive': {}
-            case 'session_reconnect': {}
-            case 'notification': {}
-            case 'revocation': {}
-            default:
+            //lifecycle
+            case 'session_welcome': {
+                this.sessionID = payload?.session?.id || null;
+                this.emit('session_welcome', payload);
+                this.emit('ready', this.sessionID);
+                break;
+            }
+            case 'session_keepalive': {
+                this.emit('session_keepalive', payload ?? null);
+                break;
+            }
+            case 'session_reconnect': {
+                this.emit('session_reconnect', payload);
+                const url = payload?.session?.reconnect_url;
+                if (url) this.connector.switchUrl(url);
+                break;
+            }
+
+            //event
+            case 'notification': {
+                this.emit('notification', payload); // catch-all
+                const type = payload?.subscription?.type;
+                const event = payload?.event;
+                if (type) this.emit(type, event);   // typed event e.g. 'channel.ad_break.begin'
+                break;
+            }
+            case 'revocation': {
+                this.emit('revocation', payload);
+                break;
+            }
+
+            //catch
+            default: {
                 this.emit("unknown_message",em_type)
+            }
         }
     }
 
