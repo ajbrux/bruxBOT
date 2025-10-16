@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
 import { ChatHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
+import { SoundMapper } from './mappers/soundMapper.js';
 
 
 //read config from .env
@@ -26,16 +27,7 @@ const client = new tmi.Client({
 });
 
 //map sounds directory
-const SOUND_DIR = path.resolve('assets', 'sounds');
-const SOUND_MAP = {};
-const soundFiles = fs.readdirSync(SOUND_DIR);
-for (const file of soundFiles) {
-    const soundPath = file.toLowerCase();
-    if (soundPath.endsWith('.mp3') || soundPath.endsWith('.wav')) {
-        const command = soundPath.replace('.mp3', '').replace('.wav', '');
-        SOUND_MAP[command] = path.join(SOUND_DIR, file);
-    }
-}
+const SOUND_MAP = SoundMapper();
 console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
 
 //map raids directory
