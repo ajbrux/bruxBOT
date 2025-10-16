@@ -27,7 +27,7 @@ export class EventSubManager extends EventEmitter {
     #handleMessage(data) {
         let event_message;
         try {
-            if (typeof data !== "string") {
+                const text = (typeof data === 'string') ? data : data?.toString?.() ?? String(data);
                 event_message = JSON.parse(data);
             }
         } catch {
@@ -81,7 +81,7 @@ export class EventSubManager extends EventEmitter {
 
     async subscribe(eventType, version = '1') {
         //checks
-        if (!this.sessionID) {
+        if (!this.clientID || !this.token || !this.broadcasterID) {
             console.error('bruxBOT must wait for open WebSocket');
             return;
         }

@@ -14,7 +14,7 @@ export function ChatHandler(client, soundManager) {
 
     //ad warning parser
     /*detect ad break*/
-    client.say(channel, adbreak)
+    //client.say(channel, adbreak)
 
     //!command parser
     const text = message.trim().toLowerCase();
