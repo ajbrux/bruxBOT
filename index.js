@@ -8,6 +8,7 @@ import { SoundManager } from './managers/soundManager.js';
 import { ChatHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
 import { SoundMapper } from './mappers/soundMapper.js';
+import { RaidMapper } from './mappers/raidMapper.js';
 
 
 //read config from .env
@@ -31,45 +32,14 @@ const SOUND_MAP = SoundMapper();
 console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
 
 //map raids directory
-const RAIDS_DIR = path.resolve('assets', 'raids');
-const RAIDS_MAP = {};
-const raidFiles = fs.readdirSync(RAIDS_DIR);
-for (const file of raidFiles) {
-    const raidsPath = file.toLowerCase();
-    if (raidsPath.endsWith('.mp3') || raidsPath.endsWith('.wav')) {
-        const raid = raidsPath.replace('.mp3', '').replace('.wav', '');
-        RAIDS_MAP[raid] = path.join(RAIDS_DIR, file);
-    }
-}
+const RAIDS_MAP =RaidMapper();
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
 const soundManager = new SoundManager(SOUND_MAP);
 
 ChatHandler(client, soundManager);
-
 RaidHandler(client, RAIDS_MAP);
 
-//!emoji alerts
-
-        /*
-        //listen for raid
-        client.on('raided', async (_chan, raider, viewers) => {
-            console.log(`${raider} raiding with ${viewers}`);
-
-            //raid alert
-            const raidSound = RAIDS_MAP[raider.toLowerCase() ] || RAIDS_MAP['raid'];
-            if (raidSound) {
-                try {
-                    sound.play(raidSound).catch(() => {});
-                    console.log('played raid sound:', raidSound);
-                } catch (err) {
-                    console.log('raid_play_failed:', err);
-                }
-            } else {
-                console.log('missing raid sound: raid.mp3 or raid.wav');
-            }
-        });
-        */
 
 //ad warning
 

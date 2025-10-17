@@ -77,15 +77,9 @@ export class EventSubManager extends EventEmitter {
         }
     }
 
-
-
     async subscribe(eventType, version = '1') {
-        //checks
+        //preflight checks
         if (!this.clientID || !this.token || !this.broadcasterID) {
-            console.error('bruxBOT must wait for open WebSocket');
-            return;
-        }
-        if (!this.clientID || !this.token || !this.brodcasterID) {
             console.error('bruxBOT has fucked up credentials');
             return;
         }

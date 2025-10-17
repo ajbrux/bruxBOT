@@ -6,7 +6,7 @@ export function SoundMapper(dir = path.resolve('assets', 'sounds')) {
     const SOUND_MAP = {};
 
     if(!fs.existsSync(dir)) {
-    return map;
+    return SOUND_MAP;
     }
 
     const files = fs.readdirSync(dir);

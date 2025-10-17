@@ -1,4 +1,4 @@
-//handlers/chatHandlers.js
+//handlers/chatHandler.js
 import sound from 'sound-play';
 
 
