@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "auth": "node auth.js",
-    "start": "node src/index.js"
+    "auth": "node oauth/auth.js",
+    "start": "node index.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
