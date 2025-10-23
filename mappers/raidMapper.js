@@ -15,7 +15,7 @@ export function RaidMapper(dir = path.resolve('assets', 'raids')) {
         const lower = file.toLowerCase();
         if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
             const key = lower.replace('.mp3', '').replace('.wav', '');
-            map[key] = path.join(dir, file);
+            RAID_MAP[key] = path.join(dir, file);
         }
     }
 

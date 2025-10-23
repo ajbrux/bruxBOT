@@ -1,0 +1,31 @@
+//overlays/wyltkmOverlay.html
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>WYLTKM Overlay - Static Image Test</title>
+    <style>
+        html, body { margin:0; height:100%; background:transparent; overflow:hidden; }
+#stage { position:relative; width:100%; height:100%; }
+#card {
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%, -50%);
+  width: clamp(320px, 40vw, 720px);
+  border:2px solid rgba(0,240,255,.7);
+  border-radius:12px; padding:12px;
+  background:rgba(0,0,0,.35); color:#fff;
+  box-shadow:0 0 16px rgba(0,240,255,.3);
+  font-family: system-ui, Arial, sans-serif;
+}
+#img { width:100%; height:auto; display:block; border-radius:8px; }
+    </style>
+</head>
+<body>
+<div id="stage">
+    <div id="card">
+        <h3>WYLTKM Overlay - Static Image Test</h3>
+        <img id="img" alt="Test" src="/images/chicken.png"/>
+    </div>
+</div>
+</body>
+</html>
