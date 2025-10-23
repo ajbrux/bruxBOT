@@ -12,7 +12,8 @@ export function OverlayServer({ port = 3030, log = console } = {}) {
     const imagesDir = path.resolve('assets', 'images');
 
     app.get('/overlay', (_req, res) => res.sendFile(overlayFile));
-    app.use('/assets', express.static(imagesDir));
+
+    app.use('/images', express.static(imagesDir));
 
     server.listen(port, () => log.info?.(`[overlay] http://localhost:${port}/overlay`));
     return { close: () => server.close()};
