@@ -6,26 +6,118 @@
     <title>WYLTKM Overlay - Static Image Test</title>
     <style>
         html, body { margin:0; height:100%; background:transparent; overflow:hidden; }
-#stage { position:relative; width:100%; height:100%; }
-#card {
-  position:absolute; left:50%; top:50%;
-  transform:translate(-50%, -50%);
-  width: clamp(320px, 40vw, 720px);
-  border:2px solid rgba(0,240,255,.7);
-  border-radius:12px; padding:12px;
-  background:rgba(0,0,0,.35); color:#fff;
-  box-shadow:0 0 16px rgba(0,240,255,.3);
-  font-family: system-ui, Arial, sans-serif;
-}
-#img { width:100%; height:auto; display:block; border-radius:8px; }
+        :root{
+            --base-speed:70;
+            --cyan: #00f0ff;
+        }
+        #stage { position:relative; width:100%; height:100%; }
+
+        #colWrap {
+            position:absolute; right:25%; top:5%; bottom:5%; width:30%;
+            overflow:hidden;
+        }
+        #column { will-change: transform; }
+
+        .item { position:relative; margin:16px 0; }
+        .item img { width:100%; height:auto; display:block; }
+        .title {
+            position:absolute; right:-12px; top:0;
+            transform: translateX(100%);
+            color:var(--cyan);
+            font-weight:700;
+            letter-spacing: .04em;
+            text-shadow: 0 0 .25rem var(--cyan);
+            font-family: system-ui, Arial, sans-serif;
+            white-space: nowrap;
+        }
+
     </style>
 </head>
 <body>
 <div id="stage">
-    <div id="card">
-        <h3>WYLTKM Overlay - Static Image Test</h3>
-        <img id="img" alt="Test" src="/images/chicken.png"/>
-    </div>
+    <div id="colWrap"><div id="column"></div></div>
+    <div id="hint">Scrolling... (images from <code>/images/*</code>)</div>
 </div>
+
+<script>
+    const wrap = document.getElementById('colWrap');
+    const column = document.getElementById('column');
+
+    let scrollY = 0;
+    let speed = Number(getComputedStyle(document.documentElement).getPropertyValue('--base-speed')) || 70;
+    let last = performance.now();
+
+    async function loadImages() {
+        const resp = await fetch('/overlay/images.json', { cache: 'no-store' });
+        const data = await resp.json();
+        const files = Array.isArray(data.files) ? data.files : [];
+
+        column.innerHTML = '';
+        for (const file of files) {
+            const id = file.replace(/\.[^.]+$/, '');
+            const title = id.replace(/[_-]/g, ' ').toUpperCase();
+
+            const item = document.createElement('div');
+            item.className = 'item';
+            item.dataset.id = id;
+
+            const img = document.createElement('img');
+            img.src = `/images/${file}`;
+            img.alt = title;
+
+            const t = document.createElement('div');
+            t.className = 'title';
+            t.textContent = title;
+
+            item.appendChild(img);
+            item.appendChild(t);
+            column.appendChild(item);
+        }
+    }
+
+    function tick(now) {
+        const dt = (now - last) / 1000; last = now;
+
+        scrollY += speed * dt;
+        column.style.transform = `translateY(${-scrollY}px)`;
+
+        wrapIfNeeded();
+        requestAnimationFrame(tick);
+    }
+
+    function wrapIfNeeded() {
+        if (!column.firstElementChild) return;
+        const wrapRect = wrap.getBoundingClientRect();
+
+        let moved = false;
+        while (column.firstElementChild) {
+            const first = column.firstElementChild;
+            const r = first.getBoundingClientRect();
+            if (r.bottom < wrapRect.top) {
+                const h = r.height;
+                column.appendChild(first);
+                scrollY -= h;
+                moved = true;
+            } else {
+                break;
+            }
+        }
+
+        if (moved) {
+            column.style.transform = 'translateY(${-scrollY}px)';
+        }
+    }
+
+    (async function init() {
+        try {
+            await loadImages();
+        } catch (e) {
+            console.error(`overlay failed to load images:`, e);
+        }
+        last = performance.now();
+        requestAnimationFrame(tick);
+
+    })();
+</script>
 </body>
 </html>
