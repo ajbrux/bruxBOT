@@ -9,12 +9,14 @@ import { ChatHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
 import { SoundMapper } from './mappers/soundMapper.js';
 import { RaidMapper } from './mappers/raidMapper.js';
+import { ImageMapper } from './mappers/ImageMapper.js';
 import { OverlayServer } from './servers/overlayServer.js';
 
 
 //spool up local overlay server
 const OVERLAY_PORT = Number(process.env.OVERLAY_PORT) || 3030;
-OverlayServer({ port: OVERLAY_PORT});
+const IMAGES_META = ImageMapper({ slotHeight: 120, gap: 12 });
+OverlayServer({ port: OVERLAY_PORT, imagesMeta: IMAGES_META });
 
 //read config from .env
 const username = process.env.TWITCH_BOT_USERNAME;

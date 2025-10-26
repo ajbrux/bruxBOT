@@ -1,11 +1,9 @@
-//overlays/overlayServer.js
+//servers/overlayServer.js
 import express from 'express';
 import http from 'http';
 import path from 'node:path';
-import fs from 'node:fs';
 
-
-export function OverlayServer({ port = 3030, log = console } = {}) {
+export function OverlayServer({ port = 3030, imagesMeta, log = console } = {}) {
     const app = express();
     const server = http.createServer(app);
 
@@ -17,17 +15,9 @@ export function OverlayServer({ port = 3030, log = console } = {}) {
     app.use('/images', express.static(imagesDir));
 
     app.get('/overlay/images.json', (_req, res) => {
-        try {
-            const files = fs.readdirSync(imagesDir)
-                .filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f))
-                .sort((a,b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base' }));
-            res.json({ files });
-        } catch (e) {
-            log.error?.('overlay list error:', e);
-            res.status(500).json({ files: [] });
-        }
-    })
+        res.json(imagesMeta || { files: [], slotHeight: 120, gap: 12, totalHeight: 0 });
+    });
 
     server.listen(port, () => log.info?.(`[overlay] http://localhost:${port}/overlay`));
-    return { close: () => server.close()};
+    return { close: () => server.close() };
 }
