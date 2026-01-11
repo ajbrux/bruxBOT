@@ -9,6 +9,8 @@
       <sourceFolder url="file://$MODULE_DIR$/managers" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/connectors" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/mappers" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/overlays" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/servers" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
