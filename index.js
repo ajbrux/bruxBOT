@@ -9,7 +9,7 @@ import { ChatHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
 import { SoundMapper } from './mappers/soundMapper.js';
 import { RaidMapper } from './mappers/raidMapper.js';
-import { ImageMapper } from './mappers/ImageMapper.js';
+import { ImageMapper } from './mappers/imageMapper.js';
 import { OverlayServer } from './servers/overlayServer.js';
 
 
