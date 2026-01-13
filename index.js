@@ -2,7 +2,6 @@
 import tmi from 'tmi.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import sound from 'sound-play';
 import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
 import { ChatHandler } from './handlers/chatHandler.js';
