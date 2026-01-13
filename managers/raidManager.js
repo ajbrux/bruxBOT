@@ -1,10 +1,10 @@
 //managers/raidManager.js
-import sound from 'sound-play';
-
+import player from 'play-sound';
 
 export class raidManager {
     constructor(RAID_MAP) {
         this.RAID_MAP = RAID_MAP;
+        this.player = player ({players: ['ffplay']});
     }
 
     playSound(commandCall) {
@@ -12,7 +12,10 @@ export class raidManager {
 
     if (soundPath) {
         try {
-            sound.play(soundPath).catch(() => {});
+            this.player.play(
+                soundPath,
+                { ffplay: ['-nodisp', '-autoexit', '-loglevel', 'error']}
+                )
             console.log('played sound:', soundPath);
         } catch (err) {
             console.log('play_failed:', err);
