@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://cg6wc5q1mvtfe"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="SubViewport" type="SubViewport" parent="."]
+
+[node name="ColumnA" type="Node2D" parent="SubViewport"]
+
+[node name="ColumnB" type="Node2D" parent="SubViewport"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
