@@ -1,65 +1,25 @@
-[gd_scene load_steps=4 format=3 uid="uid://cg6wc5q1mvtfe"]
+[gd_scene load_steps=2 format=3 uid="uid://cg6wc5q1mvtfe"]
 
-[sub_resource type="Animation" id="Animation_7oadr"]
-resource_name = "scroll_columns"
-length = 10.0
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("SubViewportContainer/SubViewport/HBoxContainer:position:y")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 10),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [0.0, 0.0]
-}
-
-[sub_resource type="Animation" id="Animation_6q8qb"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("SubViewportContainer/SubViewport/HBoxContainer:position:y")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [0.0]
-}
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_boesq"]
-_data = {
-&"RESET": SubResource("Animation_6q8qb"),
-&"scroll_columns": SubResource("Animation_7oadr")
-}
+[ext_resource type="Script" uid="uid://bwuromj1jthxo" path="res://scripts/CodexOverlayMain.gd" id="1_6q8qb"]
 
 [node name="Node2D" type="Node2D"]
+script = ExtResource("1_6q8qb")
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_right = 1920.0
+offset_bottom = 1080.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
 size = Vector2i(1920, 1080)
+render_target_update_mode = 4
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SubViewportContainer/SubViewport"]
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="Column A" type="VBoxContainer" parent="SubViewportContainer/SubViewport/HBoxContainer"]
-layout_mode = 2
-
-[node name="Column B" type="VBoxContainer" parent="SubViewportContainer/SubViewport/HBoxContainer"]
-layout_mode = 2
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-&"": SubResource("AnimationLibrary_boesq")
-}
+[node name="ColumnA" type="VBoxContainer" parent="SubViewportContainer/SubViewport"]
+custom_minimum_size = Vector2(0.235, 0)
+offset_right = 512.0
+offset_bottom = 512.0
