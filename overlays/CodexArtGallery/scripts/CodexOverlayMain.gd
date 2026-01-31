@@ -11,10 +11,10 @@ func _ready() -> void:
 
 	load_images()
 
-	### Duplicate to loop seamlessly
+	### DUPLICATE TO LOOP SEAMLESSLY
 	duplicate_column()
 
-	### delay 1 frame to calculate layout sizes
+	### DELAY 1 FRAME TO CALCULATE LAYOUT SIZES
 	await get_tree().process_frame
 
 	total_height = columnA.get_combined_minimum_size().y
@@ -22,7 +22,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	columnA.position.y -= scroll_speed * delta
-	columnA.position.y = fmod(columnA.position.y, -total_height * 0.5)
+	columnA.position.y = wrapf(columnA.position.y, -total_height * 0.5, 0.0)
 
 func load_images() -> void:
 	var dir := DirAccess.open(IMAGE_DIR)
@@ -35,7 +35,7 @@ func load_images() -> void:
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 
-	### scans and appends .webp to files Array
+	### SCANS AND APPENDS .WEBP TO files ARRAY
 	while file_name != "":
 		if file_name.to_lower().ends_with(".webp"):
 			files.append(file_name)
@@ -43,7 +43,7 @@ func load_images() -> void:
 
 	dir.list_dir_end()
 
-	### alphabetizes files Array
+	### ALPHABETIZES files ARRAY
 	files.sort()
 
 	for image_title in files:
@@ -53,30 +53,31 @@ func load_images() -> void:
 
 	print("Finished loading images")
 
-	### loads webp as a 2D texture
+	### LOADS WEBP AS A 2D TEXTURE
 func add_image(path: String) -> void:
 	var texture := load(path) as Texture2D
+
 	if texture == null:
 		push_error("Failed to load texture: " + path)
 		return
 
-	# Derive title from file name
+	### DERIVE TITLE FROM FILE NAME
 	var title := path.get_file().get_basename().capitalize()
 
-	# VBoxContainer to hold label + image
+	### VBoxContainer TO HOLD LABEL + IMAGE
 	var item_box := VBoxContainer.new()
 	item_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item_box.size_flags_vertical = Control.SIZE_FILL
 	item_box.alignment = BoxContainer.ALIGNMENT_CENTER
 
-	# Label node
+	### LABEL NODE
 	var label := Label.new()
 	label.text = title
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# TextureRect for image
+	### TextureRect FOR IMAGE
 	var sprite := TextureRect.new()
 	sprite.texture = texture
 	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
@@ -84,14 +85,15 @@ func add_image(path: String) -> void:
 	sprite.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sprite.size_flags_vertical = Control.SIZE_FILL
 
-	# Add both to container
+
+	### ADD BOTH TO CONTAINER
 	item_box.add_child(label)
 	item_box.add_child(sprite)
 
 	columnA.add_child(item_box)
 
 
-	### populate the duplicate column
+	### POPULATE THE DUPLICATE COLUMN
 func duplicate_column() -> void:
 	var original_count := columnA.get_child_count()
 
