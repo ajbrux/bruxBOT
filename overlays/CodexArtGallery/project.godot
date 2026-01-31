@@ -14,3 +14,10 @@ config/name="CodexArtGallery"
 run/main_scene="uid://cg6wc5q1mvtfe"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/resizable=false
+window/stretch/mode="viewport"

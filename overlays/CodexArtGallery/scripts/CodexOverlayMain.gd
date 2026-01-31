@@ -21,9 +21,8 @@ func _ready() -> void:
 	print("Total combined column height:", total_height)
 
 func _process(delta: float) -> void:
-	columnA.position.y -= scroll_speed * delta      ### move column upward
-	if total_height > 0.0 and columnA.position.y <= -total_height * 0.5:    	### Reset exactly when ONE full set has scrolled past
-		columnA.position.y += total_height * 0.5
+	columnA.position.y -= scroll_speed * delta
+	columnA.position.y = fmod(columnA.position.y, -total_height * 0.5)
 
 func load_images() -> void:
 	var dir := DirAccess.open(IMAGE_DIR)
@@ -61,6 +60,23 @@ func add_image(path: String) -> void:
 		push_error("Failed to load texture: " + path)
 		return
 
+	# Derive title from file name
+	var title := path.get_file().get_basename().capitalize()
+
+	# VBoxContainer to hold label + image
+	var item_box := VBoxContainer.new()
+	item_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	item_box.size_flags_vertical = Control.SIZE_FILL
+	item_box.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# Label node
+	var label := Label.new()
+	label.text = title
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# TextureRect for image
 	var sprite := TextureRect.new()
 	sprite.texture = texture
 	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
@@ -68,7 +84,12 @@ func add_image(path: String) -> void:
 	sprite.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sprite.size_flags_vertical = Control.SIZE_FILL
 
-	columnA.add_child(sprite)
+	# Add both to container
+	item_box.add_child(label)
+	item_box.add_child(sprite)
+
+	columnA.add_child(item_box)
+
 
 	### populate the duplicate column
 func duplicate_column() -> void:
