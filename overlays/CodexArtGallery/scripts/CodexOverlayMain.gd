@@ -62,7 +62,7 @@ func add_image(path: String) -> void:
 		return
 
 	### DERIVE TITLE FROM FILE NAME
-	var title := path.get_file().get_basename().capitalize()
+	var title := "!" + path.get_file().get_basename()
 
 	### VBoxContainer TO HOLD LABEL + IMAGE
 	var item_box := VBoxContainer.new()
@@ -73,13 +73,17 @@ func add_image(path: String) -> void:
 	### LABEL NODE
 	var label := Label.new()
 	label.text = title
+	label.custom_minimum_size = Vector2(300, 300)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	# label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 100)
 
 	### TextureRect FOR IMAGE
 	var sprite := TextureRect.new()
 	sprite.texture = texture
+	sprite.custom_minimum_size = Vector2(128, 128)
 	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	sprite.size_flags_horizontal = Control.SIZE_EXPAND_FILL
