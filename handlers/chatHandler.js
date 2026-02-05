@@ -20,9 +20,9 @@ export function ChatHandler(client, soundManager) {
     const text = message.trim().toLowerCase();
     if (!text.startsWith('!')) return;
 
-    const commandCall = text.slice(1);
+    const chat_command = text.slice(1);
 
-    soundManager.playSound(commandCall)
+    soundManager.playSound(chat_command)
 
   });
 }
