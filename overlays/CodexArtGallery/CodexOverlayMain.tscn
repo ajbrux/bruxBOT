@@ -19,14 +19,14 @@ handle_input_locally = false
 size = Vector2i(1920, 1080)
 render_target_update_mode = 4
 
-[node name="ColumnA" type="VBoxContainer" parent="SubViewportContainer/SubViewport"]
+[node name="ColumnA" type="Control" parent="SubViewportContainer/SubViewport"]
 custom_minimum_size = Vector2(10, 0)
+layout_mode = 3
+anchors_preset = 0
 offset_right = 10.0
 scale = Vector2(0.25, 0.25)
 size_flags_horizontal = 4
 size_flags_vertical = 0
-theme_override_constants/separation = 0
-alignment = 1
 
 [node name="ImageFetcher" type="HTTPRequest" parent="."]
 
