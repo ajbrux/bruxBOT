@@ -24,7 +24,7 @@ custom_minimum_size = Vector2(10, 0)
 layout_mode = 3
 anchors_preset = 0
 offset_right = 10.0
-scale = Vector2(0.25, 0.25)
+scale = Vector2(0.4, 0.4)
 size_flags_horizontal = 4
 size_flags_vertical = 0
 

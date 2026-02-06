@@ -1,44 +1,62 @@
 extends Node2D
 
 @onready var columnA: Control = $SubViewportContainer/SubViewport/ColumnA
-
 @onready var http_request: HTTPRequest = $ImageRequest
 @onready var image_fetcher: HTTPRequest = $ImageFetcher
 
-var scroll_speed: float = 100.0        ### pixels per second
+var scroll_speed: float = 225.0        ### pixels per second
 var total_height: float = 0.0
-var current_image_index: int = 0
 
 const VIEWPORT_HEIGHT := 1080
-const LOAD_LINE := VIEWPORT_HEIGHT + 100   # where new images are spawned
-const OFFLOAD_LINE := -200                 # when old images are removed or recycled
-const ITEM_SPACING := 350                  # vertical spacing between items (label + image)
+const ITEM_HEIGHT := 400
+const START_NODE := VIEWPORT_HEIGHT + (ITEM_HEIGHT * 2)   # where new images are spawned
+const FILL_NODE := VIEWPORT_HEIGHT + ITEM_HEIGHT
+const OFFLOAD_LINE := -512                 # when old images are removed or recycled
+const ITEM_SPACING := 400                  # vertical spacing between items (label + image)
+const TRIGGER_ON := 540   # middle of viewport
+const TRIGGER_OFF := 200  # higher zone to deactivate
 
+var active_callables: Array[String] = []
 var visible_items: Array[Control] = []
 var image_queue: Array[Dictionary] = []
 var current_image_info: Dictionary
 
-## temp debuc code
+	# COUNTERS/TRACKERS
 var load_index: int = 0
 var cycle_index: int = 0
+var current_image_index: int = 0
+var recycle_index: int = 0
+var is_paused: bool = false
+var focused_item: Control = null
 
 
 func _ready() -> void:
-	print("CodexOverlayMain ready to load images")
+	print("CodexOverlayMain READY TO LOAD images.json")
 	http_request.request("http://localhost:3030/overlay/images.json")
 
 	await get_tree().process_frame
 	total_height = columnA.get_combined_minimum_size().y
 	print("Total combined column height:", total_height)
 
-func _process(delta: float) -> void:
 
-	if image_queue.is_empty() or load_index < image_queue.size():
+func _process(delta: float) -> void:
+	if is_paused:
 		return
 
-	for i in image_queue.size():
-		if not image_queue[i].has("texture"):
-			return  # still loading, wait
+	# Callable zone activation
+	for item in visible_items:
+		var y = item.global_position.y
+		var label = item.get_node("Label")
+		var title = _label_to_title(label.text)
+
+		if y < TRIGGER_OFF:
+			if active_callables.has(title):
+				active_callables.erase(title)
+				print("Deactivated:", title)
+
+		if y < TRIGGER_ON:
+			active_callables.append(title)
+			print("Activated:", title)
 
 	# Scroll active items
 	for item in visible_items:
@@ -48,11 +66,48 @@ func _process(delta: float) -> void:
 	for item in visible_items:
 		if item.position.y < OFFLOAD_LINE:
 			recycle_item(item)
-			break  # only do one per frame for smooth performance
+			break
 
-	# Spawn new items at the bottom if needed
-	if visible_items.is_empty() or get_lowest_item_y() < LOAD_LINE:
+	# Fill texture
+	for item in visible_items:
+		if not item.has_meta("filled") and item.position.y < FILL_NODE:
+			populate_texture(item)
+
+	# Spawn new items at the bottom
+	if visible_items.is_empty() or get_lowest_item_y() < START_NODE:
 		spawn_next_item()
+
+
+func _focus_item(item: Control):
+	is_paused = true
+	focused_item = item
+
+	var tween := create_tween()
+	tween.tween_property(item, "scale", Vector2(1.5, 1.5), 0.3).set_trans(Tween.TRANS_CUBIC)
+
+	# Show a label or RichTextLabel overlay with the image blurb here
+	# show_blurb_for(item)
+
+	await get_tree().create_timer(2.0).timeout
+
+	# hide_blurb()
+	tween = create_tween()
+	tween.tween_property(item, "scale", Vector2(1, 1), 0.3)
+
+	await tween.finished
+	is_paused = false
+	focused_item = null
+
+
+func trigger_focus(title: String) -> void:
+	for item in visible_items:
+		var label = item.get_node("Label")
+		var item_title := _label_to_title(label.text)
+
+		if item_title == title:
+			_focus_item(item)
+			break
+
 
 func _on_image_request_request_completed(result, response_code, headers, body):
 	if response_code != 200:
@@ -78,6 +133,7 @@ func _on_image_request_request_completed(result, response_code, headers, body):
 		print("Fetching image: " + full_url)
 	_fetch_next_image()
 
+
 func _fetch_next_image():
 	if load_index >= image_queue.size():
 		print("All images fetched.")
@@ -92,6 +148,7 @@ func _fetch_next_image():
 	var full_url = "http://localhost:3030" + src
 	print("fetching image:", full_url)
 	image_fetcher.request(full_url)
+
 
 	# IMAGE BINARY LOADER
 func _on_image_fetcher_request_completed(result, response_code, _headers, body):
@@ -117,46 +174,11 @@ func _on_image_fetcher_request_completed(result, response_code, _headers, body):
 	image_queue[load_index]["texture"] = texture
 	var title: String = current_image_info["title"]
 	print("Loaded image for: ", title)
-	# _add_item(title,texture)
-	print("Added image: ", title)
+	print("Loaded texture for : ", title)
 
 	load_index += 1
 	_fetch_next_image()
 
-
-	# UI BUILDER FOR LABEL
-func _add_item(title: String, texture: Texture2D) -> void:
-
-
-	# VBoxContainer TO HOLD LABEL + IMAGE
-	var item_box := VBoxContainer.new()
-	item_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	item_box.size_flags_vertical = Control.SIZE_FILL
-	item_box.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	# LABEL NODE
-	var label := Label.new()
-	label.text = "!" + title
-	label.custom_minimum_size = Vector2(0, 175)       # columnA spacing managed with height value
-	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	# label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", 90)
-
-	# TextureRect FOR IMAGE
-	var sprite := TextureRect.new()
-	sprite.texture = texture
-	sprite.custom_minimum_size = Vector2(128, 128)
-	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	sprite.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sprite.size_flags_vertical = Control.SIZE_FILL
-
-	# POPULATE columnA WITH LABEL AND IMAGE
-	item_box.add_child(label)
-	item_box.add_child(sprite)
-	columnA.add_child(item_box)
 
 func spawn_next_item():
 	if image_queue.is_empty():
@@ -166,23 +188,69 @@ func spawn_next_item():
 	cycle_index = (cycle_index + 1) % image_queue.size()
 
 	var texture = info.get("texture", null)
-	if texture == null:
+	var is_empty := texture == null
+	if is_empty:
 		return
 
 	var item = create_image_item(info["title"], texture)
-	item.position.y = get_lowest_item_y() + ITEM_SPACING
+	item.position.y = get_lowest_item_y() + ITEM_HEIGHT
+	item.set_meta("filled", not is_empty)
+	item.set_meta("title", info["title"])
+
 	columnA.add_child(item)
 	visible_items.append(item)
 
+
+func populate_texture(item: Control):
+	var label = item.get_node("Label")
+	var title = _label_to_title(label.text)
+
+	for info in image_queue:
+		if info["title"] == title and info.has("texture"):
+			item.get_node("TextureRect").texture = info ["texture"]
+			item.set_meta("filled", true)
+			print("Populated texture for: ", title)
+			break
+
+
 func recycle_item(item: Control):
-	var info = image_queue[cycle_index]
-	cycle_index = (cycle_index + 1) % image_queue.size()
+	var info = image_queue[recycle_index]
+	recycle_index = (recycle_index + 1) % image_queue.size()
 
-	item.get_node("Label").text = "!" + info["title"]
-	item.get_node("TextureRect").texture = info["texture"]
+	# Guarantee that the item has only 2 children
+	for child in item.get_children():
+		item.remove_child(child)
+		child.queue_free()
+
+	# Recreate label and texture
+	var label := Label.new()
+	label.name = "Label"
+	label.text = "!" + info["title"]
+	label.custom_minimum_size = Vector2(0, 175)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 70)
+
+	# Recreate image
+	var sprite := TextureRect.new()
+	sprite.name = "TextureRect"
+	sprite.texture = info["texture"]
+	sprite.custom_minimum_size = Vector2(128, 128)
+	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+	# Add to the item
+	item.add_child(label)
+	item.add_child(sprite)
+
+	# Reposition and tag
 	item.position.y = get_lowest_item_y() + ITEM_SPACING
+	item.set_meta("title", info["title"])
+	item.set_meta("filled", true)
+	
+	print("Visible items count:", visible_items.size())
 
-func create_image_item(title: String, texture: Texture2D) -> VBoxContainer:
+
+func create_image_item(title: String, texture: Texture2D = null) -> VBoxContainer:
 	var item_box := VBoxContainer.new()
 	item_box.name = "ImageItem"
 
@@ -192,7 +260,7 @@ func create_image_item(title: String, texture: Texture2D) -> VBoxContainer:
 	label.custom_minimum_size = Vector2(0, 175)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	label.add_theme_font_size_override("font_size", 90)
+	label.add_theme_font_size_override("font_size", 70)
 
 	var sprite := TextureRect.new()
 	sprite.name = "TextureRect"
@@ -205,9 +273,15 @@ func create_image_item(title: String, texture: Texture2D) -> VBoxContainer:
 	item_box.add_child(sprite)
 	return item_box
 
+
 func get_lowest_item_y() -> float:
 	if visible_items.is_empty():
 		return 0.0
 	var last := visible_items[-1]
 	return last.position.y
-	
+
+
+func _label_to_title(text: String) -> String:
+	if text.begins_with("!"):
+		return text.substr(1)
+	return text
