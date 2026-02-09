@@ -1,115 +1,167 @@
 extends Node2D
 
-@onready var columnA: Control = $SubViewportContainer/SubViewport/ColumnA
+@onready var stage: Control = $CanvasLayer/Stage
+
+@onready var start_marker: Marker2D = $CanvasLayer/Markers/StartMarker
+@onready var load_marker: Marker2D = $CanvasLayer/Markers/LoadMarker
+@onready var focus_marker: Marker2D = $CanvasLayer/Markers/FocusMarker
+@onready var offload_marker: Marker2D = $CanvasLayer/Markers/OffloadMarker
+
+
 @onready var http_request: HTTPRequest = $ImageRequest
 @onready var image_fetcher: HTTPRequest = $ImageFetcher
 
-var scroll_speed: float = 225.0        ### pixels per second
-var total_height: float = 0.0
+# Timing Model
+@export var travel_time_s: float = 10.0		# time from start to offload
+@export var spacing_px: float = 260.0		# how far apart items appear
+@export var focus_scale: float = 1.25		# zoom at focus
+@export var	focus_width_t: float = 0.12		# how wide the focus region is
 
-const VIEWPORT_HEIGHT := 1080
-const ITEM_HEIGHT := 400
-const START_NODE := VIEWPORT_HEIGHT + (ITEM_HEIGHT * 2)   # where new images are spawned
-const FILL_NODE := VIEWPORT_HEIGHT + ITEM_HEIGHT
-const OFFLOAD_LINE := -512                 # when old images are removed or recycled
-const ITEM_SPACING := 400                  # vertical spacing between items (label + image)
-const TRIGGER_ON := 540   # middle of viewport
-const TRIGGER_OFF := 200  # higher zone to deactivate
+const ITEM_SIZE := Vector2(512, 512)
 
-var active_callables: Array[String] = []
-var visible_items: Array[Control] = []
 var image_queue: Array[Dictionary] = []
-var current_image_info: Dictionary
+var load_index := 0
+var cycle_index := 0
+var has_started := false
 
-	# COUNTERS/TRACKERS
-var load_index: int = 0
-var cycle_index: int = 0
-var current_image_index: int = 0
-var recycle_index: int = 0
-var is_paused: bool = false
-var focused_item: Control = null
+# Spawn scheduling
+var last_spawn_ms: int = 0
+var spawn_interval_s: float = 1.0
+
+class ItemState:
+	var node: Panel
+	var spawn_ms: int
+	var loaded: bool = true
+	var focused: bool = false
+	
+	func _init(n: Panel, t_ms: int) -> void:
+		node = n
+		spawn_ms = t_ms
+
+var live_items: Array[ItemState] = []
 
 
 func _ready() -> void:
-	print("CodexOverlayMain READY TO LOAD images.json")
+	# Stage sanity
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# compute spawn interval from spacing_px + travel_time
+	_recompute_spawn_interval()
+	
+	print("READY: requesting images.json")
 	http_request.request("http://localhost:3030/overlay/images.json")
-
-	await get_tree().process_frame
-	total_height = columnA.get_combined_minimum_size().y
-	print("Total combined column height:", total_height)
+	
+	
+func _recompute_spawn_interval() -> void:
+	var start_pos: Vector2 = start_marker.global_position
+	var off_pos: Vector2 = offload_marker.global_position
+	var distance: float = start_pos.distance_to(off_pos)
+	
+	if distance <= 0.001:
+		spawn_interval_s = 1.0
+		return
+	
+	# "spacing_px" worth of travel time
+	spawn_interval_s = (spacing_px / distance) * travel_time_s
 
 
 func _process(delta: float) -> void:
-	if is_paused:
+	var now_ms: int = Time.get_ticks_msec()
+	
+	_update_items(now_ms)
+	_try_spawn(now_ms)
+
+
+func _update_items(now_ms: int) -> void:
+	var start_pos := start_marker.global_position
+	var off_pos := offload_marker.global_position
+	var load_t := _marker_t(load_marker.global_position, start_pos, off_pos)
+	var focus_t := _marker_t(focus_marker.global_position, start_pos, off_pos)
+	
+	#iterate backwards so we can remove safely
+	for i in range (live_items.size() -1, -1, -1):
+		var st := live_items[i]
+		
+		var age_s := float(now_ms - st.spawn_ms) / 1000.0
+		var t := age_s / travel_time_s
+		
+		if t >= 1.0:
+			#offload
+			st.node.queue_free()
+			live_items.remove_at(i)
+			continue
+		
+		t = clamp(t, 0.0, 1.0)
+		
+		#position along line Start -> Offload
+		var p := start_pos.lerp(off_pos, t)
+		
+		# Place item centered on p (Panels use top-left position)
+		st.node.global_position = p - ITEM_SIZE * 0.5
+		
+		# Load trigger (semantic hook)
+		if (not st.loaded) and t >= load_t:
+			st.loaded = true
+			#You could populate textures here if you spawn placeholders
+		
+		# Focus scaling around focus_t
+		var focus_amt: float = 1.0 - (abs(t - focus_t) / max(focus_width_t, 0.0001))
+		focus_amt = clamp(focus_amt, 0.0, 1.0)
+		
+		var s: float = lerp(1.0, focus_scale, focus_amt)
+		st.node.scale = Vector2(s, s)
+		
+		# If you want a single "entered focus" event:
+		if (not st.focused) and t >= focus_t:
+			st.focused = true
+			#fire focus event here
+
+
+func _try_spawn(now_ms: int) -> void:
+	if image_queue.is_empty():
+		return
+	
+	# require at least one texture in queue before starting
+	if not has_started:
+		if not image_queue[0].has("texture"):
+			return
+		has_started = true
+		last_spawn_ms = now_ms - int(spawn_interval_s * 1000.0)		# allow immediate spawn
+		
+	var elapsed_s := float(now_ms - last_spawn_ms) / 1000.0
+	if elapsed_s < spawn_interval_s:
+		return
+		
+	#find next textured entry
+	var attempts: int = 0
+	while attempts < image_queue.size():
+		var info := image_queue[cycle_index]
+		cycle_index = (cycle_index + 1) % image_queue.size()
+		attempts += 1
+		
+		var tex: Texture2D = info.get("texture", null)
+		if tex == null:
+			continue
+		
+		var item := create_image_item(info.get("title", "???"), tex)
+		stage.add_child(item)
+		
+		live_items.append(ItemState.new(item, now_ms))
+		last_spawn_ms = now_ms
 		return
 
-	# Callable zone activation
-	for item in visible_items:
-		var y = item.global_position.y
-		var label = item.get_node("Label")
-		var title = _label_to_title(label.text)
 
-		if y < TRIGGER_OFF:
-			if active_callables.has(title):
-				active_callables.erase(title)
-				print("Deactivated:", title)
-
-		if y < TRIGGER_ON:
-			active_callables.append(title)
-			print("Activated:", title)
-
-	# Scroll active items
-	for item in visible_items:
-		item.position.y -= scroll_speed * delta
-
-	# Recycle offscreen items
-	for item in visible_items:
-		if item.position.y < OFFLOAD_LINE:
-			recycle_item(item)
-			break
-
-	# Fill texture
-	for item in visible_items:
-		if not item.has_meta("filled") and item.position.y < FILL_NODE:
-			populate_texture(item)
-
-	# Spawn new items at the bottom
-	if visible_items.is_empty() or get_lowest_item_y() < START_NODE:
-		spawn_next_item()
+func _marker_t(marker_pos: Vector2, start_pos: Vector2, end_pos: Vector2) -> float:
+	# Projects marker onto the start->end segment, returns normalized t
+	var v := end_pos - start_pos
+	var len2 := v.length_squared()
+	if len2 <= 0.000001:
+		return 0.0
+	var t := (marker_pos - start_pos).dot(v) / len2
+	return clamp(t, 0.0, 1.0)
 
 
-func _focus_item(item: Control):
-	is_paused = true
-	focused_item = item
-
-	var tween := create_tween()
-	tween.tween_property(item, "scale", Vector2(1.5, 1.5), 0.3).set_trans(Tween.TRANS_CUBIC)
-
-	# Show a label or RichTextLabel overlay with the image blurb here
-	# show_blurb_for(item)
-
-	await get_tree().create_timer(2.0).timeout
-
-	# hide_blurb()
-	tween = create_tween()
-	tween.tween_property(item, "scale", Vector2(1, 1), 0.3)
-
-	await tween.finished
-	is_paused = false
-	focused_item = null
-
-
-func trigger_focus(title: String) -> void:
-	for item in visible_items:
-		var label = item.get_node("Label")
-		var item_title := _label_to_title(label.text)
-
-		if item_title == title:
-			_focus_item(item)
-			break
-
-
-func _on_image_request_request_completed(result, response_code, headers, body):
+func _on_image_request_request_completed(_result, response_code, _headers, body):
 	if response_code != 200:
 		push_error("Failed to fetch image list: " + str(response_code))
 		return
@@ -124,13 +176,16 @@ func _on_image_request_request_completed(result, response_code, headers, body):
 		push_error("JSON response is fucky")
 		return
 
+	image_queue.clear()
+	load_index = 0
+	cycle_index = 0
+
 	for image_info in data["items"]:
-		var title = image_info.get("title", "???")
-		var src = image_info.get("src", "")
-		print("Queuing image: ", src)
-		image_queue.append({"title": title, "src": src})
-		var full_url = "http://localhost:3030" + src
-		print("Fetching image: " + full_url)
+		image_queue.append({
+			"title": image_info.get("title", "???"),
+			"src": image_info.get("src", "")
+			})
+			
 	_fetch_next_image()
 
 
@@ -139,149 +194,73 @@ func _fetch_next_image():
 		print("All images fetched.")
 		return
 
-	current_image_info = image_queue[load_index]
-
-	# current_image_index += 1
-
-	# var title = current_image_info["title"]
-	var src = current_image_info["src"]
-	var full_url = "http://localhost:3030" + src
-	print("fetching image:", full_url)
+	var info := image_queue[load_index]
+	var full_url: String = "http://localhost:3030" + info["src"]
 	image_fetcher.request(full_url)
 
 
-	# IMAGE BINARY LOADER
-func _on_image_fetcher_request_completed(result, response_code, _headers, body):
-	print("Recieved image, code =", response_code, "bytes =", body.size())
-
+func _on_image_fetcher_request_completed(_result, response_code, _headers, body):
 	if response_code != 200:
 		push_warning("Skipping image due to error code: " + str(response_code))
-		# current_image_index += 1
 		_fetch_next_image()
 		return
 
+	print("Recieved image, code =", response_code, "bytes =", body.size())
 	print("Image header:", body.slice(0, 8))
 
 	var img := Image.new()
 	var err := img.load_webp_from_buffer(body)
-	print("webp decode status of image size", body.size(), ":", err)
 	if err != OK:
-		push_warning("Image decode failed: " + str(err))
+		push_warning("Failed to decode webp at index " + str(load_index))
+		load_index += 1
+		_fetch_next_image()
 		return
-
-	var texture := ImageTexture.create_from_image(img)
-	# current_image_info["texture"] = texture
-	image_queue[load_index]["texture"] = texture
-	var title: String = current_image_info["title"]
-	print("Loaded image for: ", title)
-	print("Loaded texture for : ", title)
+		
+	var tex := ImageTexture.create_from_image(img)
+	image_queue[load_index]["texture"] = tex
 
 	load_index += 1
 	_fetch_next_image()
 
 
-func spawn_next_item():
-	if image_queue.is_empty():
-		return
+func create_image_item(title: String, texture: Texture2D = null) -> Panel:
+	var box := Panel.new()
+	box.name = title
+	box.size = ITEM_SIZE
+	box.custom_minimum_size = ITEM_SIZE
 
-	var info = image_queue[cycle_index]
-	cycle_index = (cycle_index + 1) % image_queue.size()
-
-	var texture = info.get("texture", null)
-	var is_empty := texture == null
-	if is_empty:
-		return
-
-	var item = create_image_item(info["title"], texture)
-	item.position.y = get_lowest_item_y() + ITEM_HEIGHT
-	item.set_meta("filled", not is_empty)
-	item.set_meta("title", info["title"])
-
-	columnA.add_child(item)
-	visible_items.append(item)
-
-
-func populate_texture(item: Control):
-	var label = item.get_node("Label")
-	var title = _label_to_title(label.text)
-
-	for info in image_queue:
-		if info["title"] == title and info.has("texture"):
-			item.get_node("TextureRect").texture = info ["texture"]
-			item.set_meta("filled", true)
-			print("Populated texture for: ", title)
-			break
-
-
-func recycle_item(item: Control):
-	var info = image_queue[recycle_index]
-	recycle_index = (recycle_index + 1) % image_queue.size()
-
-	# Guarantee that the item has only 2 children
-	for child in item.get_children():
-		item.remove_child(child)
-		child.queue_free()
-
-	# Recreate label and texture
-	var label := Label.new()
-	label.name = "Label"
-	label.text = "!" + info["title"]
-	label.custom_minimum_size = Vector2(0, 175)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 70)
-
-	# Recreate image
-	var sprite := TextureRect.new()
-	sprite.name = "TextureRect"
-	sprite.texture = info["texture"]
-	sprite.custom_minimum_size = Vector2(128, 128)
-	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-
-	# Add to the item
-	item.add_child(label)
-	item.add_child(sprite)
-
-	# Reposition and tag
-	item.position.y = get_lowest_item_y() + ITEM_SPACING
-	item.set_meta("title", info["title"])
-	item.set_meta("filled", true)
-	
-	print("Visible items count:", visible_items.size())
-
-
-func create_image_item(title: String, texture: Texture2D = null) -> VBoxContainer:
-	var item_box := VBoxContainer.new()
-	item_box.name = "ImageItem"
+	# Make Panel visible
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0.15, 0.15, 0.15, 0.85)
+	box.add_theme_stylebox_override("panel", panel)
 
 	var label := Label.new()
 	label.name = "Label"
 	label.text = "!" + title
-	label.custom_minimum_size = Vector2(0, 175)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	label.add_theme_font_size_override("font_size", 70)
+	label.anchor_left = 0
+	label.anchor_top = 0
+	label.anchor_bottom = 0
+	label.anchor_right = 1
+	label.offset_top = 0
+	label.offset_bottom = 48
+	label.add_theme_color_override("font_color", Color(1, 0, 0))
+	label.add_theme_font_size_override("font_size", 48)
+	box.add_child(label)
 
 	var sprite := TextureRect.new()
 	sprite.name = "TextureRect"
 	sprite.texture = texture
-	sprite.custom_minimum_size = Vector2(128, 128)
-	sprite.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	sprite.anchor_left = 0
+	sprite.anchor_top = 0
+	sprite.anchor_bottom = 1
+	sprite.anchor_right = 1
+	sprite.offset_left = 0
+	sprite.offset_top = 0
+	sprite.offset_bottom = 0
+	sprite.offset_right = 0
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	box.add_child(sprite)
 
-	item_box.add_child(label)
-	item_box.add_child(sprite)
-	return item_box
-
-
-func get_lowest_item_y() -> float:
-	if visible_items.is_empty():
-		return 0.0
-	var last := visible_items[-1]
-	return last.position.y
-
-
-func _label_to_title(text: String) -> String:
-	if text.begins_with("!"):
-		return text.substr(1)
-	return text
+	return box
