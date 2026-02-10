@@ -12,12 +12,15 @@ signal images_ready(queue: Array)
 signal image_loaded(index: int, texture: Texture2D)
 signal all_images_loaded()
 
+
 func _ready() -> void:
 	http_request.request_completed.connect(_on_ImageRequest_request_completed)
 	image_fetcher.request_completed.connect(_on_ImageFetcher_request_completed)
 
+
 func request_images(url: String) -> void:
 	http_request.request(url)
+
 
 func _on_ImageRequest_request_completed(_result, response_code, _headers, body):
 	if response_code != 200:
@@ -45,6 +48,7 @@ func _on_ImageRequest_request_completed(_result, response_code, _headers, body):
 	emit_signal("images_ready", queue.duplicate())
 	_fetch_next_image()
 
+
 func _fetch_next_image() -> void:
 	if load_index >= queue.size():
 		emit_signal("all_images_loaded")
@@ -52,6 +56,7 @@ func _fetch_next_image() -> void:
 
 	var url: String = "http://localhost:3030" + queue[load_index]["src"]
 	image_fetcher.request(url)
+
 
 func _on_ImageFetcher_request_completed(_result, response_code, _headers, body):
 	if response_code != 200:
