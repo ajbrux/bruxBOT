@@ -1,3 +1,4 @@
+### CodexOverlayMain.gd
 extends Node2D
 
 @onready var stage: Control = $CanvasLayer/Stage
@@ -27,18 +28,7 @@ var has_started := false
 # Spawn scheduling
 var last_spawn_ms: int = 0
 var spawn_interval_s: float = 1.0
-
-class ItemState:
-	var node: Panel
-	var spawn_ms: int
-	var loaded: bool = true
-	var focused: bool = false
-	
-	func _init(n: Panel, t_ms: int) -> void:
-		node = n
-		spawn_ms = t_ms
-
-var live_items: Array[ItemState] = []
+var live_items: Array[ScrollingItem] = []
 
 
 func _ready() -> void:
@@ -58,7 +48,7 @@ func _recompute_spawn_interval() -> void:
 	var distance: float = start_pos.distance_to(off_pos)
 	
 	if distance <= 0.001:
-		spawn_interval_s = 1.0
+		spawn_interval_s = 8.0
 		return
 	
 	# "spacing_px" worth of travel time
@@ -70,51 +60,19 @@ func _process(delta: float) -> void:
 	
 	_update_items(now_ms)
 	_try_spawn(now_ms)
-
-
-func _update_items(now_ms: int) -> void:
-	var start_pos := start_marker.global_position
-	var off_pos := offload_marker.global_position
-	var load_t := _marker_t(load_marker.global_position, start_pos, off_pos)
-	var focus_t := _marker_t(focus_marker.global_position, start_pos, off_pos)
 	
+	return
+
+
+func _update_items(now_ms: int) -> void:	
 	#iterate backwards so we can remove safely
 	for i in range (live_items.size() -1, -1, -1):
-		var st := live_items[i]
-		
-		var age_s := float(now_ms - st.spawn_ms) / 1000.0
-		var t := age_s / travel_time_s
-		
-		if t >= 1.0:
-			#offload
-			st.node.queue_free()
+		var item := live_items[i]
+		if not item.update_item(now_ms):
+			item.queue_free()
 			live_items.remove_at(i)
-			continue
-		
-		t = clamp(t, 0.0, 1.0)
-		
-		#position along line Start -> Offload
-		var p := start_pos.lerp(off_pos, t)
-		
-		# Place item centered on p (Panels use top-left position)
-		st.node.global_position = p - ITEM_SIZE * 0.5
-		
-		# Load trigger (semantic hook)
-		if (not st.loaded) and t >= load_t:
-			st.loaded = true
-			#You could populate textures here if you spawn placeholders
-		
-		# Focus scaling around focus_t
-		var focus_amt: float = 1.0 - (abs(t - focus_t) / max(focus_width_t, 0.0001))
-		focus_amt = clamp(focus_amt, 0.0, 1.0)
-		
-		var s: float = lerp(1.0, focus_scale, focus_amt)
-		st.node.scale = Vector2(s, s)
-		
-		# If you want a single "entered focus" event:
-		if (not st.focused) and t >= focus_t:
-			st.focused = true
-			#fire focus event here
+
+	return
 
 
 func _try_spawn(now_ms: int) -> void:
@@ -143,10 +101,23 @@ func _try_spawn(now_ms: int) -> void:
 		if tex == null:
 			continue
 		
-		var item := create_image_item(info.get("title", "???"), tex)
-		stage.add_child(item)
+		var item := ScrollingItem.new()
+		item.name = info.get("title", "???")
+
+		item.setup(
+			now_ms,
+			travel_time_s,
+			start_marker.global_position,
+			offload_marker.global_position,
+			_marker_t(load_marker.global_position, start_marker.global_position, offload_marker.global_position),
+			_marker_t(focus_marker.global_position, start_marker.global_position, offload_marker.global_position),
+			focus_width_t,
+			focus_scale
+		)
 		
-		live_items.append(ItemState.new(item, now_ms))
+		_configure_item_visuals(item, info.get("title", "???"), tex)
+		stage.add_child(item)
+		live_items.append(item)
 		last_spawn_ms = now_ms
 		return
 
@@ -223,44 +194,32 @@ func _on_image_fetcher_request_completed(_result, response_code, _headers, body)
 	_fetch_next_image()
 
 
-func create_image_item(title: String, texture: Texture2D = null) -> Panel:
-	var box := Panel.new()
-	box.name = title
-	box.size = ITEM_SIZE
-	box.custom_minimum_size = ITEM_SIZE
-
-	# Make Panel visible
-	var panel := StyleBoxFlat.new()
+func _configure_item_visuals(
+	item: ScrollingItem,
+	title: String,
+	texture: Texture2D
+) -> void:
+	item.size = ITEM_SIZE
+	item.custom_minimum_size = ITEM_SIZE
+	
+	var panel :=StyleBoxFlat.new()
 	panel.bg_color = Color(0.15, 0.15, 0.15, 0.85)
-	box.add_theme_stylebox_override("panel", panel)
-
+	item.add_theme_stylebox_override("panel", panel)
+	
 	var label := Label.new()
-	label.name = "Label"
 	label.text = "!" + title
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.anchor_left = 0
-	label.anchor_top = 0
-	label.anchor_bottom = 0
 	label.anchor_right = 1
-	label.offset_top = 0
 	label.offset_bottom = 48
-	label.add_theme_color_override("font_color", Color(1, 0, 0))
 	label.add_theme_font_size_override("font_size", 48)
-	box.add_child(label)
-
+	label.add_theme_color_override("font_color", Color.RED)
+	item.add_child(label)
+	
 	var sprite := TextureRect.new()
-	sprite.name = "TextureRect"
 	sprite.texture = texture
-	sprite.anchor_left = 0
-	sprite.anchor_top = 0
-	sprite.anchor_bottom = 1
 	sprite.anchor_right = 1
-	sprite.offset_left = 0
-	sprite.offset_top = 0
-	sprite.offset_bottom = 0
-	sprite.offset_right = 0
+	sprite.anchor_bottom = 1
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	box.add_child(sprite)
-
-	return box
+	item.add_child(sprite)
+	return
