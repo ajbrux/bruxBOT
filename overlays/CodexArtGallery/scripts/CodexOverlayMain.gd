@@ -8,9 +8,7 @@ extends Node2D
 @onready var focus_marker: Marker2D = $CanvasLayer/Markers/FocusMarker
 @onready var offload_marker: Marker2D = $CanvasLayer/Markers/OffloadMarker
 
-
-@onready var http_request: HTTPRequest = $ImageRequest
-@onready var image_fetcher: HTTPRequest = $ImageFetcher
+@onready var loader: ImageLoader = $ImageLoader
 
 # Timing Model
 @export var travel_time_s: float = 10.0		# time from start to offload
@@ -32,16 +30,35 @@ var live_items: Array[ScrollingItem] = []
 
 
 func _ready() -> void:
-	# Stage sanity
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	# compute spawn interval from spacing_px + travel_time
 	_recompute_spawn_interval()
 	
+	loader.images_ready.connect(_on_images_ready)
+	loader.image_loaded.connect(_on_image_loaded)
+	loader.all_images_loaded.connect(_on_all_images_loaded)
+	
 	print("READY: requesting images.json")
-	http_request.request("http://localhost:3030/overlay/images.json")
-	
-	
+	loader.request_images("http://localhost:3030/overlay/images.json")
+
+
+func _on_images_ready(queue: Array) -> void:
+	# Shallow copy is fine; dictionaries are shared
+	image_queue = queue
+	has_started = false
+	cycle_index = 0
+	print("Images metadata received:", image_queue.size())
+
+
+func _on_image_loaded(index: int, texture: Texture2D) -> void:
+	if index < image_queue.size():
+		image_queue[index]["texture"] = texture
+	print("Image loaded:", index)
+
+
+func _on_all_images_loaded() -> void:
+	print("All images fully loaded")
+
+
 func _recompute_spawn_interval() -> void:
 	var start_pos: Vector2 = start_marker.global_position
 	var off_pos: Vector2 = offload_marker.global_position
@@ -130,68 +147,6 @@ func _marker_t(marker_pos: Vector2, start_pos: Vector2, end_pos: Vector2) -> flo
 		return 0.0
 	var t := (marker_pos - start_pos).dot(v) / len2
 	return clamp(t, 0.0, 1.0)
-
-
-func _on_image_request_request_completed(_result, response_code, _headers, body):
-	if response_code != 200:
-		push_error("Failed to fetch image list: " + str(response_code))
-		return
-
-	var json := JSON.new()
-	if json.parse(body.get_string_from_utf8()) != OK:
-		push_error("JSON parse failed: " + json.get_error_message())
-		return
-
-	var data: Dictionary = json.data
-	if typeof(data) != TYPE_DICTIONARY or not data.has("items"):
-		push_error("JSON response is fucky")
-		return
-
-	image_queue.clear()
-	load_index = 0
-	cycle_index = 0
-
-	for image_info in data["items"]:
-		image_queue.append({
-			"title": image_info.get("title", "???"),
-			"src": image_info.get("src", "")
-			})
-			
-	_fetch_next_image()
-
-
-func _fetch_next_image():
-	if load_index >= image_queue.size():
-		print("All images fetched.")
-		return
-
-	var info := image_queue[load_index]
-	var full_url: String = "http://localhost:3030" + info["src"]
-	image_fetcher.request(full_url)
-
-
-func _on_image_fetcher_request_completed(_result, response_code, _headers, body):
-	if response_code != 200:
-		push_warning("Skipping image due to error code: " + str(response_code))
-		_fetch_next_image()
-		return
-
-	print("Recieved image, code =", response_code, "bytes =", body.size())
-	print("Image header:", body.slice(0, 8))
-
-	var img := Image.new()
-	var err := img.load_webp_from_buffer(body)
-	if err != OK:
-		push_warning("Failed to decode webp at index " + str(load_index))
-		load_index += 1
-		_fetch_next_image()
-		return
-		
-	var tex := ImageTexture.create_from_image(img)
-	image_queue[load_index]["texture"] = tex
-
-	load_index += 1
-	_fetch_next_image()
 
 
 func _configure_item_visuals(
