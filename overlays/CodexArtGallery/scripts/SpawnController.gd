@@ -11,10 +11,11 @@ class_name SpawnController
 @export var travel_time_s: float = 19
 @export var spacing_px: float = 170
 @export var focus_scale: float = 1
-@export var focus_width_t: float = 1
+@export var focus_width_t: float = 0.3
 
 const ITEM_SIZE := Vector2(300, 160)
 
+var scroll_speed_multiplier: float = 1.0
 var stage: Control
 var start_marker: Marker2D
 var load_marker: Marker2D
@@ -25,7 +26,7 @@ var image_queue: Array[Dictionary] = []
 var cycle_index: int = 0
 var has_started: bool = false
 
-var last_spawn_ms: int = 0
+var spawn_elapsed_s: float = 0.0
 var spawn_interval_s: float = 1.0
 var live_items: Array[ScrollingItem] = []
 
@@ -47,7 +48,7 @@ func set_queue(queue: Array) -> void:
 	image_queue = queue
 	cycle_index = 0
 	has_started = false
-	last_spawn_ms = 0
+	spawn_elapsed_s = 0.0
 
 
 func on_image_loaded(index: int, texture: Texture2D) -> void:
@@ -56,9 +57,9 @@ func on_image_loaded(index: int, texture: Texture2D) -> void:
 
 
 func _process(delta: float) -> void:
-	var now_ms: int = Time.get_ticks_msec()
-	_update_items(now_ms)
-	_try_spawn(now_ms)
+	spawn_elapsed_s += delta * scroll_speed_multiplier
+	_update_item(delta)
+	_try_spawn()
 
 
 func _recompute_spawn_interval() -> void:
@@ -77,17 +78,19 @@ func _recompute_spawn_interval() -> void:
 	spawn_interval_s = (spacing_px / distance) * travel_time_s
 
 
-func _update_items(now_ms: int) -> void:
+func _update_item(delta: float) -> void:
 	for i in range(live_items.size() - 1, -1, -1):
 		var item := live_items[i]
-		if not item.update_item(now_ms):
+		if not item.update_item(delta, scroll_speed_multiplier):
 			item.queue_free()
 			live_items.remove_at(i)
 
 
-func _try_spawn(now_ms: int) -> void:
+func _try_spawn() -> void:
 	if image_queue.is_empty():
 		return
+	
+	
 	
 	if not has_started:
 		var found := false
@@ -100,11 +103,12 @@ func _try_spawn(now_ms: int) -> void:
 		if not found:
 			return
 		
+		
+		
 		has_started = true
-		last_spawn_ms = now_ms - int(spawn_interval_s * 1000.0)		#allow immediate spawn
+		spawn_elapsed_s = spawn_interval_s		#allow immediate spawn
 	
-	var elapsed_s := float(now_ms - last_spawn_ms) / 1000.0
-	if elapsed_s < spawn_interval_s:
+	if spawn_elapsed_s < spawn_interval_s:
 		return
 	
 	var attempts: int = 0
@@ -123,7 +127,6 @@ func _try_spawn(now_ms: int) -> void:
 		item.name = title
 		
 		item.setup(
-			now_ms,
 			travel_time_s,
 			start_marker.global_position,
 			offload_marker.global_position,
@@ -138,7 +141,7 @@ func _try_spawn(now_ms: int) -> void:
 		stage.add_child(item)
 		live_items.append(item)
 		
-		last_spawn_ms = now_ms
+		spawn_elapsed_s = 0.0
 		return
 
 
@@ -178,9 +181,10 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	#label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	#label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("font_size", 29)
-	label.add_theme_color_override("font_color", Color.CRIMSON)
+	# label.add_theme_color_override("font_color", Color.CRIMSON)
 	
 	label_center.add_child(label)
+	item.label = label
 	vbox.add_child(label_center)
 	
 	var sprite_center := CenterContainer.new()
