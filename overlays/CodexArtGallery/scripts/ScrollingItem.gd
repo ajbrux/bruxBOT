@@ -1,7 +1,7 @@
+### ScrollingItem.gd
 extends Panel
 class_name ScrollingItem
 
-const ITEM_SIZE := Vector2(512, 512)
 
 var spawn_ms: int
 var travel_time_s: float
@@ -15,6 +15,7 @@ var focus_scale: float
 
 var loaded := true
 var focused := false
+
 
 func setup(
 	p_spawn_ms: int,
@@ -34,3 +35,31 @@ func setup(
 	focus_t = p_focus_t
 	focus_width_t = p_focus_width_t
 	focus_scale = p_focus_scale
+	global_position = start_pos - size * 0.5
+	visible = true
+
+
+func update_item(now_ms: int) -> bool:
+	var age_s: float = float(now_ms - spawn_ms) / 1000.0
+	var t: float = age_s / travel_time_s
+	
+	if t >= 1.0:
+		return false
+	
+	t = clamp(t, 0.0, 1.0)
+	
+	var p := start_pos.lerp(off_pos, t)
+	global_position = p - size * 0.5
+	
+	# Focus scaling
+	var focus_amt: float = 1.0 - (abs(t - focus_t) / max(focus_width_t, 0.0001))
+	focus_amt = clamp(focus_amt, 0.0, 1.0)
+	
+	var s: float = lerp(1.0, focus_scale, focus_amt)
+	scale = Vector2(s, s)
+	
+	if not focused and t >= focus_t:
+		focused = true
+		#future hook
+		
+	return true

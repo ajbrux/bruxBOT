@@ -19,10 +19,10 @@ offset_bottom = 40.0
 position = Vector2(1928, 1088)
 
 [node name="StartMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(-1736, 384)
+position = Vector2(-1736, 192)
 
 [node name="LoadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(-1736, 256)
+position = Vector2(-1736, 64)
 
 [node name="OffloadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
 position = Vector2(-1736, -1152)

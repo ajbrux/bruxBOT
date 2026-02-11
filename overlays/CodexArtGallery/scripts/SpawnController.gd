@@ -8,13 +8,12 @@ class_name SpawnController
 @export var focus_marker_path: NodePath = ^"../CanvasLayer/Markers/FocusMarker"
 @export var offload_marker_path: NodePath = ^"../CanvasLayer/Markers/OffloadMarker"
 
-# Timing Model
-@export var travel_time_s: float = 10
-@export var spacing_px: float = 260
-@export var focus_scale: float = 1.25
-@export var focus_width_t: float = 0.12
+@export var travel_time_s: float = 19
+@export var spacing_px: float = 170
+@export var focus_scale: float = 1
+@export var focus_width_t: float = 1
 
-const ITEM_SIZE := Vector2(512, 512)
+const ITEM_SIZE := Vector2(300, 160)
 
 var stage: Control
 var start_marker: Marker2D
@@ -157,22 +156,43 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	item.custom_minimum_size = ITEM_SIZE
 	
 	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(0.15, 0.15, 0.15, 0.85)
+	panel.bg_color = Color.TRANSPARENT
+	panel.content_margin_left = 0
+	panel.content_margin_right = 0
+	panel.content_margin_top = 0
+	panel.content_margin_bottom = 0
 	item.add_theme_stylebox_override("panel", panel)
+	
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	
+	var label_center := CenterContainer.new()
+	label_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var label := Label.new()
 	label.text = "!" + title
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.anchor_right = 1
-	label.offset_bottom = 48
-	label.add_theme_font_size_override("font_size", 48)
-	label.add_theme_color_override("font_color", Color.RED)
-	item.add_child(label)
+	#label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	#label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.add_theme_font_size_override("font_size", 29)
+	label.add_theme_color_override("font_color", Color.CRIMSON)
+	
+	label_center.add_child(label)
+	vbox.add_child(label_center)
+	
+	var sprite_center := CenterContainer.new()
+	sprite_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var sprite := TextureRect.new()
 	sprite.texture = texture
-	sprite.anchor_right = 1
-	sprite.anchor_bottom = 1
+	sprite.custom_minimum_size = Vector2(115, 115)
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	item.add_child(sprite)
+	
+	sprite_center.add_child(sprite)
+	vbox.add_child(sprite_center)
+	
+	item.add_child(vbox)
