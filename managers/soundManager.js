@@ -7,6 +7,10 @@ export class SoundManager {
         this.player = player ({players: ['ffplay']});
     }
 
+    hasSound(name) {
+        return !!this.SOUND_MAP[name];
+    }
+
     playSound(commandCall) {
     const soundPath = this.SOUND_MAP[commandCall];
 

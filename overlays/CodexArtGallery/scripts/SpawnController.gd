@@ -211,18 +211,16 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	item.add_child(vbox)
 
 
-func fire_first_armed() -> void:
+func start_call_by_title(title: String) -> void:
 	if called_item != null:
 		return
 	
 	for item in live_items:
-		if item.focused and item.call_state == ScrollingItem.CallState.NORMAL:
+		if item.focused \
+		and item.call_state == ScrollingItem.CallState.NORMAL \
+		and item.name.to_upper() == title:
+			
 			called_item = item
 			item.start_call(display_marker.global_position)
 			scroll_speed_multiplier = 0.2
 			return
-
-
-func _input(event) -> void:
-	if event.is_action_pressed("ui_accept"):
-		fire_first_armed()

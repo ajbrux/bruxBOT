@@ -15,7 +15,9 @@ import { OverlayServer } from './servers/overlayServer.js';
 //spool up local overlay server
 const OVERLAY_PORT = Number(process.env.OVERLAY_PORT) || 3030;
 const IMAGES_META = ImageMapper({ slotHeight: 120, gap: 12 });
-OverlayServer({ port: OVERLAY_PORT, imagesMeta: IMAGES_META });
+const overlay = OverlayServer({ port: OVERLAY_PORT});
+
+
 
 //read config from .env
 const username = process.env.TWITCH_BOT_USERNAME;
@@ -41,9 +43,17 @@ console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
 const RAIDS_MAP =RaidMapper();
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
+const IMAGE_MAP = {}
+const imageFiles = IMAGES_META.files || [];
+
+for(const f of imageFiles) {
+    IMAGE_MAP[f.id.toLowerCase()] = f;
+}
+console.log('assets/images directory loaded', Object.keys(IMAGE_MAP));
+
 const soundManager = new SoundManager(SOUND_MAP);
 
-ChatHandler(client, soundManager);
+ChatHandler(client, soundManager, overlay, IMAGE_MAP);
 RaidHandler(client, RAIDS_MAP);
 
 

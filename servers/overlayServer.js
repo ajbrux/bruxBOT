@@ -3,10 +3,34 @@ import express from 'express';
 import http from 'http';
 import path from 'node:path';
 import { ImageMapper } from '../mappers/imageMapper.js';
+import { WebSocketServer } from 'ws'
 
 export function OverlayServer({ port = 3030, log = console } = {}) {
     const app = express();
     const server = http.createServer(app);
+
+    const wss = new WebSocketServer({ server });
+    const clients = new Set();
+
+    wss.on('connection', (ws) => {
+        clients.add(ws);
+        log.info?.('[overlay] websocket connected');
+
+        ws.on('close', () => {
+            clients.delete(ws);
+            log.info?.('[overlay] websocket disconnected')
+        });
+    });
+
+    function broadcast(data) {
+        const payload = JSON.stringify(data);
+
+        for (const ws of clients) {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(payload);
+            }
+        }
+    }
 
     const overlayRoot = path.resolve('overlays', 'CodexArtGallery', 'html');
     const imagesDir = path.resolve('assets', 'images');
@@ -33,7 +57,10 @@ export function OverlayServer({ port = 3030, log = console } = {}) {
 
     server.listen(port, () => {
         log.info?.(`[overlay] http://localhost:${port}/overlay`);
-        log.info?.(`[overlay] images.json to http://localhost:${port}/overlay/images.json`);
+        log.info?.(`[overlay] websocket ready on ws://localhost:${port}`);
         });
-    return { close: () => server.close() };
+    return {
+    close: () => server.close(),
+     broadcast
+     };
 }

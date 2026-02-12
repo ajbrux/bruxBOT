@@ -2,10 +2,14 @@
 extends Panel
 class_name ScrollingItem
 
+@export var call_travel_time: float = 0.6
+@export var display_hold_time: float = 3.0
+
 var progress: float = 0.0
 var elapsed_s: float = 0.0
 var travel_time_s: float
 
+var call_start_position: Vector2
 var display_position: Vector2
 var start_pos: Vector2
 var off_pos: Vector2
@@ -59,13 +63,15 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	if call_state == CallState.CALLING:
 		call_timer += delta
 		
-		var target := display_position
+		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
+		var eased := ease_in_out(t)
 		
-		global_position = global_position.lerp(target - size * 0.5, 0.1)
+		global_position = call_start_position.lerp(display_position - size * 0.5, eased)
 		
-		scale = scale.lerp(Vector2(512.0 / size.x, 512.0 / size.y), 0.1)
+		var target_scale := Vector2(512.0 / size.x, 512.0 / size.y)
+		scale = Vector2.ONE.lerp(target_scale, eased)
 		
-		if global_position.distance_to(target - size * 0.5) < 5:
+		if t >= 1.0:
 			call_state = CallState.DISPLAYED
 			call_timer = 0.0
 			print(name, " DISPLAYED")
@@ -74,25 +80,31 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	
 	if call_state == CallState.DISPLAYED:
 		call_timer += delta
-		if call_timer >= 3.0:
+		if call_timer >= display_hold_time:
 			call_state = CallState.RETURNING
 			print(name, " RETURNING")
+		
+		return true
 	
 	if call_state == CallState.RETURNING:
 		call_timer += delta
 		
-		var scroll_pos := start_pos.lerp(off_pos, progress)
-		global_position = global_position.lerp(scroll_pos - size * 0.5, 0.1)
-		scale = scale.lerp(Vector2.ONE, 0.1)
+		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
+		var eased := ease_in_out(t)
 		
-		if scale.distance_to(Vector2.ONE) < 0.1:
+		var scroll_pos := start_pos.lerp(off_pos, progress) - size * 0.5
+		var display_pos := display_position - size * 0.5
+		
+		global_position = display_pos.lerp(scroll_pos, eased)
+		
+		var target_scale := Vector2(512.0 / size.x, 512.0 / size.y)
+		scale = target_scale.lerp(Vector2.ONE, eased)
+		
+		if t >= 1.0:
 			call_state = CallState.NORMAL
 			print(name, "RETURN COMPLETE")
 		
 		return true
-	
-	
-	
 	
 	if progress >= 1.0:
 		return false
@@ -118,10 +130,14 @@ func start_call(display_pos: Vector2) -> void:
 		return
 	
 	display_position = display_pos
+	call_start_position = global_position
 	call_state = CallState.CALLING
 	call_timer = 0.0
 	print(name, " CALLED")
-	
+
+
+func ease_in_out(t: float) -> float:
+	return t * t * (3.0 - 2.0 * t)
 
 
 func _arm() -> void:
