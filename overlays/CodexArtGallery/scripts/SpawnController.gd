@@ -7,12 +7,14 @@ class_name SpawnController
 @export var load_marker_path: NodePath = ^"../CanvasLayer/Markers/LoadMarker"
 @export var focus_marker_path: NodePath = ^"../CanvasLayer/Markers/FocusMarker"
 @export var offload_marker_path: NodePath = ^"../CanvasLayer/Markers/OffloadMarker"
+@export var display_marker_path: NodePath = ^"../CanvasLayer/Markers/DisplayMarker"
 
 @export var travel_time_s: float = 19
 @export var spacing_px: float = 170
 @export var focus_scale: float = 1
-@export var focus_width_t: float = 0.3
+@export var focus_width_t: float = 0.35
 
+var display_marker: Marker2D
 const ITEM_SIZE := Vector2(300, 160)
 
 var scroll_speed_multiplier: float = 1.0
@@ -23,6 +25,7 @@ var focus_marker: Marker2D
 var offload_marker: Marker2D
 
 var image_queue: Array[Dictionary] = []
+var called_item: ScrollingItem = null
 var cycle_index: int = 0
 var has_started: bool = false
 
@@ -36,6 +39,7 @@ func _ready() -> void:
 	start_marker = get_node(start_marker_path) as Marker2D
 	load_marker = get_node(load_marker_path) as Marker2D
 	focus_marker = get_node(focus_marker_path) as Marker2D
+	display_marker = get_node(display_marker_path) as Marker2D
 	offload_marker = get_node(offload_marker_path) as Marker2D
 	
 	if stage:
@@ -84,6 +88,11 @@ func _update_item(delta: float) -> void:
 		if not item.update_item(delta, scroll_speed_multiplier):
 			item.queue_free()
 			live_items.remove_at(i)
+	
+	if called_item and called_item.call_state == ScrollingItem.CallState.NORMAL:
+		scroll_speed_multiplier = 1.0
+		called_item = null
+		print("Call cycle complete. Scroll restored.")
 
 
 func _try_spawn() -> void:
@@ -200,3 +209,20 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	vbox.add_child(sprite_center)
 	
 	item.add_child(vbox)
+
+
+func fire_first_armed() -> void:
+	if called_item != null:
+		return
+	
+	for item in live_items:
+		if item.focused and item.call_state == ScrollingItem.CallState.NORMAL:
+			called_item = item
+			item.start_call(display_marker.global_position)
+			scroll_speed_multiplier = 0.2
+			return
+
+
+func _input(event) -> void:
+	if event.is_action_pressed("ui_accept"):
+		fire_first_armed()
