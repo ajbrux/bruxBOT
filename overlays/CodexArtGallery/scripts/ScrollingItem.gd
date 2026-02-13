@@ -1,4 +1,4 @@
-### ScrollingItem.gd
+### res://scripts/ScrollingItem.gd
 extends Panel
 class_name ScrollingItem
 
@@ -12,7 +12,7 @@ var travel_time_s: float
 
 var call_start_position: Vector2
 var display_position: Vector2
-var return_target_position: Vector2
+# var return_target_position: Vector2
 var start_pos: Vector2
 var off_pos: Vector2
 var load_t: float
@@ -29,7 +29,8 @@ var label: Label
 var disarmed_color: Color = Color.BLACK
 var armed_color: Color = Color.GOLD
 
-var return_start_position
+var original_local_position: Vector2
+var return_start_position: Vector2
 var display_layer: Control
 var sprite_wrapper: Control
 var original_parent: Node
@@ -99,8 +100,6 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	if call_state == CallState.DISPLAYED:
 		call_timer += delta
 		
-		
-		
 		if call_timer >= display_hold_time:
 			call_state = CallState.RETURNING
 			call_timer = 0.0
@@ -115,10 +114,13 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
 		var eased := ease_in_out(t)
 		
-		sprite_wrapper.global_position = return_start_position.lerp(return_target_position, eased)
+		var panel_global := global_position
+		var target := panel_global + original_local_position
 		
-		var target_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
-		sprite_wrapper.scale = target_scale.lerp(Vector2.ONE, eased)
+		sprite_wrapper.global_position = return_start_position.lerp(target, eased)
+		
+		var display_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
+		sprite_wrapper.scale = display_scale.lerp(Vector2.ONE, eased)
 		
 		label.modulate.a = eased
 		
@@ -130,7 +132,6 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 			original_parent.move_child(sprite_wrapper, original_index)
 			
 			sprite_wrapper.set_global_transform(world_xform)
-			
 			sprite_wrapper.scale = Vector2.ONE
 			label.modulate.a = 1.0
 			
@@ -162,11 +163,11 @@ func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	display_layer = p_display_layer
 	display_position = display_pos
 	
-	#capture true starting position before reparent
-	call_start_position = sprite_wrapper.global_position
-	
 	original_parent = sprite_wrapper.get_parent()
 	original_index = sprite_wrapper.get_index()
+	
+	original_local_position = sprite_wrapper.position
+	call_start_position = sprite_wrapper.global_position
 	
 	original_parent.remove_child(sprite_wrapper)
 	display_layer.add_child(sprite_wrapper)
