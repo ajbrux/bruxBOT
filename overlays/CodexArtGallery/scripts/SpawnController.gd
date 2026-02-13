@@ -1,4 +1,4 @@
-### SpawnController.gd
+### res://scripts/SpawnController.gd
 extends Node
 class_name SpawnController
 
@@ -174,10 +174,6 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = Color.ROSY_BROWN
-	panel.content_margin_left = 0
-	panel.content_margin_right = 0
-	panel.content_margin_top = 0
-	panel.content_margin_bottom = 0
 	item.add_theme_stylebox_override("panel", panel)
 	
 	var vbox := VBoxContainer.new()
@@ -192,20 +188,19 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	var label := Label.new()
 	label.text = "!" + title
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	#label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	#label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("font_size", 29)
-	# label.add_theme_color_override("font_color", Color.CRIMSON)
 	
 	label_center.add_child(label)
-	item.label = label
 	vbox.add_child(label_center)
 	
+	item.label = label
+	
+	#sprite
 	var sprite_center := CenterContainer.new()
 	sprite_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sprite_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	
 	var sprite_wrapper := Control.new()
-	sprite_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	sprite_wrapper.custom_minimum_size = Vector2(115, 115)
 	
 	var sprite := TextureRect.new()
@@ -215,13 +210,11 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 	
 	sprite_wrapper.add_child(sprite)
-	item.add_child(sprite_wrapper)
+	sprite_center.add_child(sprite_wrapper)
+	vbox.add_child(sprite_center)
 	
 	item.sprite_wrapper = sprite_wrapper
 	item.sprite = sprite
-	
-	
-	vbox.add_child(sprite_center)
 	
 	item.add_child(vbox)
 

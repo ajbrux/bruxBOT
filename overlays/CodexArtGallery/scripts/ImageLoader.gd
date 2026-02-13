@@ -1,4 +1,4 @@
-### ImageLoader.gd
+### res://scripts/ImageLoader.gd
 extends Node
 class_name ImageLoader
 

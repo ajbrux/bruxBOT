@@ -1,4 +1,4 @@
-### CodexOverlayMain.gd
+### res://scripts/CodexOverlayMain.gd
 extends Node2D
 
 @onready var loader: ImageLoader = $ImageLoader
