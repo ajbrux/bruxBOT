@@ -2,21 +2,25 @@
 extends Panel
 class_name ScrollingItem
 
-@export var call_travel_time: float = 0.6
+@export var call_travel_time: float = 2.5
 @export var display_hold_time: float = 3.0
 
+var call_progress: float = 0.0
 var progress: float = 0.0
 var elapsed_s: float = 0.0
 var travel_time_s: float
 
 var call_start_position: Vector2
 var display_position: Vector2
+var return_target_position: Vector2
 var start_pos: Vector2
 var off_pos: Vector2
 var load_t: float
 var focus_t: float
 var focus_width_t: float
 var focus_scale: float
+var sprite: TextureRect
+var blurb_label: Label		#saving for later
 
 var loaded := true
 var focused := false
@@ -24,6 +28,12 @@ var focused := false
 var label: Label
 var disarmed_color: Color = Color.BLACK
 var armed_color: Color = Color.GOLD
+
+var return_start_position
+var display_layer: Control
+var sprite_wrapper: Control
+var original_parent: Node
+var original_index: int
 
 enum CallState {
 	NORMAL,
@@ -60,16 +70,24 @@ func setup(
 func update_item(delta: float, speed_multiplier: float) -> bool:
 	progress += (delta / travel_time_s) * speed_multiplier
 	
+	var p := start_pos.lerp(off_pos, progress)
+	global_position = p - size * 0.5
+	
 	if call_state == CallState.CALLING:
 		call_timer += delta
 		
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
+		call_progress = t
 		var eased := ease_in_out(t)
 		
-		global_position = call_start_position.lerp(display_position - size * 0.5, eased)
+		var target := display_position
 		
-		var target_scale := Vector2(512.0 / size.x, 512.0 / size.y)
-		scale = Vector2.ONE.lerp(target_scale, eased)
+		sprite_wrapper.global_position = call_start_position.lerp(target, eased)
+		
+		var target_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
+		sprite_wrapper.scale = Vector2.ONE.lerp(target_scale, eased)
+		
+		label.modulate.a = 1.0 - eased
 		
 		if t >= 1.0:
 			call_state = CallState.DISPLAYED
@@ -80,8 +98,13 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	
 	if call_state == CallState.DISPLAYED:
 		call_timer += delta
+		
+		
+		
 		if call_timer >= display_hold_time:
 			call_state = CallState.RETURNING
+			call_timer = 0.0
+			return_start_position = sprite_wrapper.global_position
 			print(name, " RETURNING")
 		
 		return true
@@ -92,15 +115,25 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
 		var eased := ease_in_out(t)
 		
-		var scroll_pos := start_pos.lerp(off_pos, progress) - size * 0.5
-		var display_pos := display_position - size * 0.5
+		sprite_wrapper.global_position = return_start_position.lerp(return_target_position, eased)
 		
-		global_position = display_pos.lerp(scroll_pos, eased)
+		var target_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
+		sprite_wrapper.scale = target_scale.lerp(Vector2.ONE, eased)
 		
-		var target_scale := Vector2(512.0 / size.x, 512.0 / size.y)
-		scale = target_scale.lerp(Vector2.ONE, eased)
+		label.modulate.a = eased
 		
 		if t >= 1.0:
+			var world_xform := sprite_wrapper.get_global_transform()
+			
+			display_layer.remove_child(sprite_wrapper)
+			original_parent.add_child(sprite_wrapper)
+			original_parent.move_child(sprite_wrapper, original_index)
+			
+			sprite_wrapper.set_global_transform(world_xform)
+			
+			sprite_wrapper.scale = Vector2.ONE
+			label.modulate.a = 1.0
+			
 			call_state = CallState.NORMAL
 			print(name, "RETURN COMPLETE")
 		
@@ -108,9 +141,6 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	
 	if progress >= 1.0:
 		return false
-	
-	var p := start_pos.lerp(off_pos, progress)
-	global_position = p - size * 0.5
 	
 	var in_focus: bool = abs(progress - focus_t) <= focus_width_t
 	
@@ -125,14 +155,29 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	return true
 
 
-func start_call(display_pos: Vector2) -> void:
+func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	if call_state != CallState.NORMAL:
 		return
-	
+		
+	display_layer = p_display_layer
 	display_position = display_pos
-	call_start_position = global_position
+	
+	#capture true starting position before reparent
+	call_start_position = sprite_wrapper.global_position
+	
+	original_parent = sprite_wrapper.get_parent()
+	original_index = sprite_wrapper.get_index()
+	
+	original_parent.remove_child(sprite_wrapper)
+	display_layer.add_child(sprite_wrapper)
+	
+	#preserve world position
+	sprite_wrapper.global_position = call_start_position
+	
 	call_state = CallState.CALLING
 	call_timer = 0.0
+	call_progress = 0.0
+	
 	print(name, " CALLED")
 
 

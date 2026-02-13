@@ -8,17 +8,19 @@ class_name SpawnController
 @export var focus_marker_path: NodePath = ^"../CanvasLayer/Markers/FocusMarker"
 @export var offload_marker_path: NodePath = ^"../CanvasLayer/Markers/OffloadMarker"
 @export var display_marker_path: NodePath = ^"../CanvasLayer/Markers/DisplayMarker"
+@export var display_layer_path: NodePath = ^"../CanvasLayer/DisplayLayer"
 
 @export var travel_time_s: float = 19
 @export var spacing_px: float = 170
 @export var focus_scale: float = 1
 @export var focus_width_t: float = 0.35
+var scroll_speed_multiplier: float = 1.0
 
 var display_marker: Marker2D
 const ITEM_SIZE := Vector2(300, 160)
 
-var scroll_speed_multiplier: float = 1.0
 var stage: Control
+var display_layer: Control
 var start_marker: Marker2D
 var load_marker: Marker2D
 var focus_marker: Marker2D
@@ -36,6 +38,7 @@ var live_items: Array[ScrollingItem] = []
 
 func _ready() -> void:
 	stage = get_node(stage_path) as Control
+	display_layer = get_node(display_layer_path) as Control
 	start_marker = get_node(start_marker_path) as Marker2D
 	load_marker = get_node(load_marker_path) as Marker2D
 	focus_marker = get_node(focus_marker_path) as Marker2D
@@ -61,6 +64,12 @@ func on_image_loaded(index: int, texture: Texture2D) -> void:
 
 
 func _process(delta: float) -> void:
+	if called_item:
+		var slow_strength := 0.8
+		scroll_speed_multiplier = 1.0 - (called_item.call_progress * slow_strength)
+	else:
+		scroll_speed_multiplier = lerp(scroll_speed_multiplier, 1.0, delta * 3.0)
+	
 	spawn_elapsed_s += delta * scroll_speed_multiplier
 	_update_item(delta)
 	_try_spawn()
@@ -90,7 +99,7 @@ func _update_item(delta: float) -> void:
 			live_items.remove_at(i)
 	
 	if called_item and called_item.call_state == ScrollingItem.CallState.NORMAL:
-		scroll_speed_multiplier = 1.0
+		scroll_speed_multiplier = lerp(scroll_speed_multiplier, 1.0, delta * 3.0)
 		called_item = null
 		print("Call cycle complete. Scroll restored.")
 
@@ -98,8 +107,6 @@ func _update_item(delta: float) -> void:
 func _try_spawn() -> void:
 	if image_queue.is_empty():
 		return
-	
-	
 	
 	if not has_started:
 		var found := false
@@ -111,8 +118,6 @@ func _try_spawn() -> void:
 		
 		if not found:
 			return
-		
-		
 		
 		has_started = true
 		spawn_elapsed_s = spawn_interval_s		#allow immediate spawn
@@ -168,7 +173,7 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	item.custom_minimum_size = ITEM_SIZE
 	
 	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color.TRANSPARENT
+	panel.bg_color = Color.ROSY_BROWN
 	panel.content_margin_left = 0
 	panel.content_margin_right = 0
 	panel.content_margin_top = 0
@@ -199,13 +204,23 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	var sprite_center := CenterContainer.new()
 	sprite_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
+	var sprite_wrapper := Control.new()
+	sprite_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	sprite_wrapper.custom_minimum_size = Vector2(115, 115)
+	
 	var sprite := TextureRect.new()
 	sprite.texture = texture
-	sprite.custom_minimum_size = Vector2(115, 115)
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 	
-	sprite_center.add_child(sprite)
+	sprite_wrapper.add_child(sprite)
+	item.add_child(sprite_wrapper)
+	
+	item.sprite_wrapper = sprite_wrapper
+	item.sprite = sprite
+	
+	
 	vbox.add_child(sprite_center)
 	
 	item.add_child(vbox)
@@ -221,6 +236,5 @@ func start_call_by_title(title: String) -> void:
 		and item.name.to_upper() == title:
 			
 			called_item = item
-			item.start_call(display_marker.global_position)
-			scroll_speed_multiplier = 0.2
-			return
+			item.start_call(display_marker.global_position, display_layer)
+			
