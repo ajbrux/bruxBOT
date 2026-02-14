@@ -25,7 +25,7 @@ position = Vector2(128, 1216)
 position = Vector2(128, 1152)
 
 [node name="OffloadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(128, -64)
+position = Vector2(128, -128)
 
 [node name="FocusMarker" type="Marker2D" parent="CanvasLayer/Markers"]
 position = Vector2(128, 544)
@@ -38,7 +38,7 @@ offset_bottom = 40.0
 
 [node name="DisplayMarker" type="Marker2D" parent="CanvasLayer/DisplayLayer"]
 z_index = 1
-position = Vector2(872, 80)
+position = Vector2(310, 35)
 script = ExtResource("2_6krp6")
 
 [node name="ImageLoader" type="Node" parent="."]
