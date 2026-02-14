@@ -79,24 +79,12 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	
 	if call_state == CallState.CALLING:
 		call_timer += delta
-		
-		
-		
-		if call_timer == 0.0:
-			print("CALLING start: call_start_position=", call_start_position,
-				" wrapper.gp=", sprite_wrapper.global_position,
-				" target=", display_position)
-			
-			
 			
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
 		call_progress = t
 		var eased := ease_in_out(t)
 		
-		var target := display_position
-		
-		var start_gp: Vector2 = reparent_cap.get("start_global_position", sprite_wrapper.global_position)
-		sprite_wrapper.global_position = start_gp.lerp(target, eased)
+		CallAnimator.lerp_from_start_global(sprite_wrapper, reparent_cap, display_position, eased)
 		
 		var target_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
 		sprite_wrapper.scale = Vector2.ONE.lerp(target_scale, eased)
@@ -127,9 +115,8 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
 		var eased := ease_in_out(t)
 		
-		var target := CallAnimator.compute_return_target_global(reparent_cap)
-		
-		sprite_wrapper.global_position = return_start_position.lerp(target, eased)
+		CallAnimator.lerp_to_return_target(sprite_wrapper, reparent_cap, return_start_position, eased)
+
 		
 		var display_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
 		sprite_wrapper.scale = display_scale.lerp(Vector2.ONE, eased)
@@ -165,38 +152,14 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 
 func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	
-	
-	
-	var dbg := true
-	
-	
-	
 	if call_state != CallState.NORMAL:
 		return
 	
 	display_layer = p_display_layer
 	display_position = display_pos
 	
-	
-	
-	DebugCode.space(dbg, self, sprite_wrapper, "start_call BEFORE capture")
 	reparent_cap = CallAnimator.capture_reparent(sprite_wrapper)
-	print("cap.start_global_position=", reparent_cap.get("start_global_position"))
-	print("call_start_position(before set)=", call_start_position)
-	
-	
-	
-	
-	reparent_cap = CallAnimator.capture_reparent(sprite_wrapper)
-	
 	CallAnimator.preserve_world_position_across_reparent(sprite_wrapper, display_layer)
-	
-	
-	
-	DebugCode.space(dbg, self, sprite_wrapper, "start_call AFTER reparent (preserved world pos)")
-	print("call_start_position(AFTER reparent, still?)=", call_start_position)
-	
-	
 	
 	call_state = CallState.CALLING
 	call_timer = 0.0
