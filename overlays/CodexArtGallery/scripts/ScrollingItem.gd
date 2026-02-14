@@ -125,13 +125,13 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		label.modulate.a = eased
 		
 		if t >= 1.0:
-			var world_xform := sprite_wrapper.get_global_transform()
+			var gp := sprite_wrapper.global_position
 			
 			display_layer.remove_child(sprite_wrapper)
 			original_parent.add_child(sprite_wrapper)
 			original_parent.move_child(sprite_wrapper, original_index)
 			
-			sprite_wrapper.set_global_transform(world_xform)
+			sprite_wrapper.global_position = gp
 			sprite_wrapper.scale = Vector2.ONE
 			label.modulate.a = 1.0
 			
@@ -159,7 +159,15 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	if call_state != CallState.NORMAL:
 		return
-		
+	
+	
+	
+	dbg_stack("start_call ENTER")
+	dbg_chain(sprite_wrapper, "BEFORE reparent")
+	dbg_space(sprite_wrapper, "BEFORE reparent")
+	
+	
+	
 	display_layer = p_display_layer
 	display_position = display_pos
 	
@@ -174,6 +182,14 @@ func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	
 	#preserve world position
 	sprite_wrapper.global_position = call_start_position
+	
+	
+	
+	dbg_stack("start_call ENTER")
+	dbg_chain(sprite_wrapper, "BEFORE reparent")
+	dbg_space(sprite_wrapper, "BEFORE reparent")
+	
+	
 	
 	call_state = CallState.CALLING
 	call_timer = 0.0
@@ -196,3 +212,59 @@ func _disarm() -> void:
 	if label:
 		label.add_theme_color_override("font_color", disarmed_color)
 		print(name, " DISARMED at progress: ", progress)
+
+
+
+
+
+
+
+
+
+
+
+@export var debug_calls := true
+
+func dbg_stack(tag: String) -> void:
+	if not debug_calls:
+		return
+	print("\n=== STACK:", name, ":", tag, "===")
+	print_stack()
+
+func dbg_chain(n: Node, tag: String) -> void:
+	if not debug_calls:
+		return
+	print("\n=== PARENT CHAIN:", name, ":", tag, "===")
+	var cur: Node = n
+	while cur:
+		var p := cur.get_parent()
+		print("%s (%s)  path=%s  parent=%s" % [
+			str(cur.name), cur.get_class(), str(cur.get_path()),
+			str(p.name) if p else "NONE"
+		])
+		cur = p
+
+
+func dbg_subtree(root: Node, tag: String, max_depth: int = 6) -> void:
+	if not debug_calls:
+		return
+	print("\n=== SUBTREE:", name, ":", tag, " root=", root.get_path(), "===")
+	_print_tree_limited(root, 0, max_depth)
+
+func _print_tree_limited(n: Node, depth: int, max_depth: int) -> void:
+	var indent := "  ".repeat(depth)
+	print("%s- %s (%s)" % [indent, n.name, n.get_class()])
+	if depth >= max_depth:
+		return
+	for c in n.get_children():
+		_print_tree_limited(c, depth + 1, max_depth)
+
+
+func dbg_space(ci: CanvasItem, tag: String) -> void:
+	if not debug_calls:
+		return
+	print("\n=== SPACE:", name, ":", tag, "===")
+	print("node:", ci.name, " class:", ci.get_class(), " path:", ci.get_path())
+	print(" local pos:", ci.position, " global pos:", ci.global_position)
+	print(" global xform:", ci.get_global_transform())
+	print(" canvas xform:", ci.get_global_transform_with_canvas())
