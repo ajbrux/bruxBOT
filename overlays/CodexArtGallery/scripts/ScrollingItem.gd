@@ -114,8 +114,7 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
 		var eased := ease_in_out(t)
 		
-		var panel_global := global_position
-		var target := panel_global + original_local_position
+		var target := (original_parent as CanvasItem).get_global_transform_with_canvas() * original_local_position
 		
 		sprite_wrapper.global_position = return_start_position.lerp(target, eased)
 		
@@ -131,8 +130,9 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 			original_parent.add_child(sprite_wrapper)
 			original_parent.move_child(sprite_wrapper, original_index)
 			
-			sprite_wrapper.global_position = gp
+			sprite_wrapper.position = original_local_position
 			sprite_wrapper.scale = Vector2.ONE
+			
 			label.modulate.a = 1.0
 			
 			call_state = CallState.NORMAL
@@ -186,8 +186,8 @@ func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	
 	
 	dbg_stack("start_call ENTER")
-	dbg_chain(sprite_wrapper, "BEFORE reparent")
-	dbg_space(sprite_wrapper, "BEFORE reparent")
+	dbg_chain(sprite_wrapper, "AFTER reparent")
+	dbg_space(sprite_wrapper, "AFTER reparent")
 	
 	
 	
