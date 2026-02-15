@@ -58,3 +58,11 @@ static func space(enabled: bool, owner: Object, ci: CanvasItem, tag: String) -> 
 	print(" local pos:", ci.position, " global pos:", ci.global_position)
 	print(" global xform:", ci.get_global_transform())
 	print(" canvas xform:", ci.get_global_transform_with_canvas())
+
+
+static func kv(enabled: bool, owner: Object, tag: String, data: Dictionary) -> void:
+	if not enabled:
+		return
+	print("\n=== DEBUG KV:", _owner_label(owner), ":", tag, "===")
+	for k in data.keys():
+		print(" - ", k, ": ", data[k])

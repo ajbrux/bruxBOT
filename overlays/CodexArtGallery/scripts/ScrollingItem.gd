@@ -56,9 +56,29 @@ func setup(
 
 	global_position = start_pos - size * 0.5
 	visible = true
+	
+	print("\n=== DEBUG ScrollingItem.setup ===", name)
+	DebugCode.space(true, self, self, "ScrollingItem Panel")
+	print("Panel modulate/self_modulate=", modulate, self_modulate)
+
+	var sb = get_theme_stylebox("panel")
+	print("theme_stylebox(panel)=", sb, " type=", sb.get_class() if sb else "null")
 
 
 func update_item(delta: float, speed_multiplier: float) -> bool:
+	
+	
+	if not loaded:
+		pass
+	# one-time “first frame visible” log
+	if loaded and progress > 0.0 and progress < 0.02:
+		print("[item first move] ", name, " panel alpha mod/self=",
+			modulate.a, self_modulate.a,
+			" sprite_wrapper alpha=", sprite_wrapper.modulate.a if sprite_wrapper else -1.0)
+
+	
+	
+	
 	progress += (delta / travel_time_s) * speed_multiplier
 	var p := start_pos.lerp(off_pos, progress)
 	global_position = p - size * 0.5

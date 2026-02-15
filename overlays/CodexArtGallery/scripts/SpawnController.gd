@@ -14,8 +14,17 @@ class_name SpawnController
 @export var spacing_px: float = 170
 @export var focus_scale: float = 1
 @export var focus_width_t: float = 0.35
-var scroll_speed_multiplier: float = 1.0
 
+
+
+var _dbg := true
+var _dbg_first_spawn_done := false
+var _dbg_first_added_item: ScrollingItem = null
+var _dbg_frames_left := 180
+
+
+
+var scroll_speed_multiplier: float = 1.0
 var display_marker: Marker2D
 const ITEM_SIZE := Vector2(300, 160)
 
@@ -37,6 +46,18 @@ var live_items: Array[ScrollingItem] = []
 
 
 func _ready() -> void:
+	
+	
+	
+	if _dbg:
+		print("\n=== DEBUG SpawnController._ready ===")
+		DebugCode.space(true, self, stage, "Stage")
+		DebugCode.space(true, self, display_layer, "DisplayLayer")
+		print("Stage modulate/self_modulate=", stage.modulate, stage.self_modulate)
+		print("DisplayLayer modulate/self_modulate=", display_layer.modulate, display_layer.self_modulate)
+	
+	
+	
 	stage = get_node(stage_path) as Control
 	display_layer = get_node(display_layer_path) as Control
 	start_marker = get_node(start_marker_path) as Marker2D
@@ -64,6 +85,19 @@ func on_image_loaded(index: int, texture: Texture2D) -> void:
 
 
 func _process(delta: float) -> void:
+	
+	
+	
+	
+	if _dbg and _dbg_frames_left > 0:
+		_dbg_frames_left -= 1
+		if _dbg_frames_left % 30 == 0:
+			print("[spawn tick] called_item=", called_item.name if called_item else "<none>",
+				" live_items=", live_items.size(),
+				" scroll_mult=", scroll_speed_multiplier)
+	
+	
+	
 	if called_item:
 		var slow_strength := 0.8
 		scroll_speed_multiplier = 1.0 - (called_item.call_progress * slow_strength)
@@ -152,7 +186,28 @@ func _try_spawn() -> void:
 		
 		_configure_item_visuals(item, title, tex)
 		
+		
+		
+		if _dbg and not _dbg_first_spawn_done:
+			_dbg_first_spawn_done = true
+			_dbg_first_added_item = item
+			print("\n=== DEBUG first spawn PRE add_child ===")
+			DebugCode.space(true, self, stage, "Stage PRE")
+			DebugCode.space(true, self, display_layer, "DisplayLayer PRE")
+		
+		
+		
+		
 		stage.add_child(item)
+		
+		
+		
+		if _dbg and _dbg_first_added_item == item:
+			print("\n=== DEBUG first spawn POST add_child ===")
+			DebugCode.space(true, self, item, "Item POST")
+			DebugCode.chain(true, self, item, "Item chain POST")
+		
+		
 		live_items.append(item)
 		
 		spawn_elapsed_s = 0.0

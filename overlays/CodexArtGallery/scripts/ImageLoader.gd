@@ -5,6 +5,9 @@ class_name ImageLoader
 @onready var http_request: HTTPRequest = $ImageRequest
 @onready var image_fetcher: HTTPRequest = $ImageFetcher
 
+
+const DBG_NET := true
+
 var queue: Array[Dictionary] = []
 var load_index: int = 0
 
@@ -19,10 +22,16 @@ func _ready() -> void:
 
 
 func request_images(url: String) -> void:
+	if DBG_NET:
+		print("[images.json] request => ", url)
 	http_request.request(url)
 
 
 func _on_ImageRequest_request_completed(_result, response_code, _headers, body):
+	if DBG_NET:
+		print("[images.json] response_code=", response_code, " bytes=", body.size())
+		_print_headers("images.json", _headers)
+		
 	if response_code != 200:
 		push_error("Failed to fetch image list: %s" % response_code)
 		return
@@ -55,10 +64,22 @@ func _fetch_next_image() -> void:
 		return
 
 	var url: String = "http://localhost:3030" + queue[load_index]["src"]
+	
+	if DBG_NET:
+		print("[img] request idx=", load_index, " => ", url)
+		
+		
 	image_fetcher.request(url)
 
 
 func _on_ImageFetcher_request_completed(_result, response_code, _headers, body):
+	if DBG_NET:
+		print("[img] resp idx=", load_index, " code=", response_code, " bytes=", body.size())
+		_print_headers("image", _headers)
+		if body.size() > 0:
+			var peek: PackedByteArray = body.slice(0, min(24, body.size()))
+			print("[img] first bytes=", peek)
+	
 	if response_code != 200:
 		push_warning("Skipping image at index %d" % load_index)
 		load_index += 1
@@ -78,3 +99,14 @@ func _on_ImageFetcher_request_completed(_result, response_code, _headers, body):
 
 	load_index += 1
 	_fetch_next_image()
+
+
+
+func _print_headers(tag: String, headers: Array) -> void:
+	if not DBG_NET:
+		return
+	# headers are strings like "Content-Type: ..."
+	for h in headers:
+		var hs := String(h)
+		if hs.to_lower().begins_with("content-type") or hs.to_lower().begins_with("x-content-type-options"):
+			print("[", tag, "] header ", hs)
