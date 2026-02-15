@@ -5,13 +5,13 @@ class_name ScrollingItem
 @export var call_travel_time: float = 2.5
 @export var display_hold_time: float = 3.0
 
-var call_progress: float = 0.0
+var call_anim := CallAnimator.new()
+
 var progress: float = 0.0
 var elapsed_s: float = 0.0
 var travel_time_s: float
 
 var call_start_position: Vector2
-var display_position: Vector2
 # var return_target_position: Vector2
 var start_pos: Vector2
 var off_pos: Vector2
@@ -30,24 +30,21 @@ var disarmed_color: Color = Color.BLACK
 var armed_color: Color = Color.GOLD
 
 # var original_local_position: Vector2
-var return_start_position: Vector2
-var display_layer: Control
 var sprite_wrapper: Control
 # var original_parent: Node
 # var original_index: int
 
+
+enum CallState { NORMAL, CALLING, DISPLAYED, RETURNING }
+var call_timer: float
+var call_progress: float
+var display_position: Vector2
+var return_start_position: Vector2
+var display_layer: Control
 var reparent_cap: Dictionary
 
 
-enum CallState {
-	NORMAL,
-	CALLING,
-	DISPLAYED,
-	RETURNING
-}
-
 var call_state: CallState = CallState.NORMAL
-var call_timer: float = 0.0
 
 
 func setup(
@@ -79,17 +76,10 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 	
 	if call_state == CallState.CALLING:
 		call_timer += delta
-			
+		
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
-		call_progress = t
-		var eased := ease_in_out(t)
-		
-		CallAnimator.lerp_from_start_global(sprite_wrapper, reparent_cap, display_position, eased)
-		
-		var target_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
-		sprite_wrapper.scale = Vector2.ONE.lerp(target_scale, eased)
-		
-		label.modulate.a = 1.0 - eased
+		call_anim.update_calling(sprite_wrapper, label, reparent_cap, display_position, t)
+		call_progress = call_anim.call_progress
 		
 		if t >= 1.0:
 			call_state = CallState.DISPLAYED
@@ -113,20 +103,11 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 		call_timer += delta
 		
 		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
-		var eased := ease_in_out(t)
-		
-		CallAnimator.lerp_to_return_target(sprite_wrapper, reparent_cap, return_start_position, eased)
-
-		
-		var display_scale := Vector2(512.0 / sprite_wrapper.size.x, 512.0 / sprite_wrapper.size.y)
-		sprite_wrapper.scale = display_scale.lerp(Vector2.ONE, eased)
-		
-		label.modulate.a = eased
+		call_anim.update_returning(sprite_wrapper, label, reparent_cap, return_start_position, t)
+		call_progress = call_anim.call_progress
 		
 		if t >= 1.0:
-			
 			CallAnimator.restore_to_original_parent(sprite_wrapper, reparent_cap)
-			
 			sprite_wrapper.scale = Vector2.ONE
 			label.modulate.a = 1.0
 			call_state = CallState.NORMAL
@@ -168,8 +149,7 @@ func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
 	print(name, " CALLED")
 
 
-func ease_in_out(t: float) -> float:
-	return t * t * (3.0 - 2.0 * t)
+
 
 
 func _arm() -> void:
