@@ -2,6 +2,10 @@
 class_name DebugCode
 extends RefCounted
 
+static func _build_stamp() -> void:
+	print("DebugCode build stamp: 2026-02-13 KV_PRESENT")
+
+
 static func _owner_label(owner: Object) -> String:
 	if owner == null:
 		return "<null>"
@@ -53,7 +57,13 @@ static func _print_tree_limited(n: Node, depth: int, max_depth: int) -> void:
 static func space(enabled: bool, owner: Object, ci: CanvasItem, tag: String) -> void:
 	if not enabled:
 		return
+		
 	print("\n=== SPACE:", _owner_label(owner), ":", tag, "===")
+	
+	var path_str := "<not in tree>"
+	if ci is Node and (ci as Node).is_inside_tree():
+		path_str = str((ci as Node).get_path())
+		
 	print("node:", ci.name, " class:", ci.get_class(), " path:", ci.get_path())
 	print(" local pos:", ci.position, " global pos:", ci.global_position)
 	print(" global xform:", ci.get_global_transform())

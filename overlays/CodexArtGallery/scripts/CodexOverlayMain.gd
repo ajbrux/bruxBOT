@@ -13,6 +13,9 @@ var _dbg_frames_left := 180 # ~3 seconds @ 60fps
 
 
 func _ready() -> void:
+	DebugCode._build_stamp()
+	
+	
 	print("\n==============================")
 	print("BOOT CodexOverlayMain _ready()")
 	print("BUILD STAMP: 2026-02-13 A (init spam)")
@@ -54,12 +57,18 @@ func _ready() -> void:
 	loader.request_images("http://localhost:3030/overlay/images.json")
 
 
-func _process(_delta):
+func _process(_delta: float) -> void:
 	# First few seconds: show heartbeat + WS state
 	if DBG_INIT and _dbg_frames_left > 0:
 		_dbg_frames_left -= 1
 		if _dbg_frames_left % 30 == 0:
-			print("[frame spam] dt=", _delta, " ws_state=", ws.get_ready_state(), " live_items=", spawner.live_items.size() if spawner else -1)
+			print(
+				"[frame spam] dt=",
+				_delta,
+				" ws_state=",
+				ws.get_ready_state(),
+				" live_items=",
+				spawner.live_items.size() if spawner else -1)
 	ws.poll()
 	
 	if ws.get_ready_state() == WebSocketPeer.STATE_OPEN:

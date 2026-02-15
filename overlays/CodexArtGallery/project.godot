@@ -21,6 +21,7 @@ window/size/viewport_height=1080
 window/size/resizable=false
 window/size/transparent=true
 window/stretch/mode="viewport"
+window/per_pixel_transparency/allowed=true
 
 [rendering]
 

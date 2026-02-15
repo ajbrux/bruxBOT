@@ -46,7 +46,13 @@ var live_items: Array[ScrollingItem] = []
 
 
 func _ready() -> void:
-	
+	stage = get_node(stage_path) as Control
+	display_layer = get_node(display_layer_path) as Control
+	start_marker = get_node(start_marker_path) as Marker2D
+	load_marker = get_node(load_marker_path) as Marker2D
+	focus_marker = get_node(focus_marker_path) as Marker2D
+	display_marker = get_node(display_marker_path) as Marker2D
+	offload_marker = get_node(offload_marker_path) as Marker2D
 	
 	
 	if _dbg:
@@ -58,13 +64,7 @@ func _ready() -> void:
 	
 	
 	
-	stage = get_node(stage_path) as Control
-	display_layer = get_node(display_layer_path) as Control
-	start_marker = get_node(start_marker_path) as Marker2D
-	load_marker = get_node(load_marker_path) as Marker2D
-	focus_marker = get_node(focus_marker_path) as Marker2D
-	display_marker = get_node(display_marker_path) as Marker2D
-	offload_marker = get_node(offload_marker_path) as Marker2D
+
 	
 	if stage:
 		stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -139,6 +139,11 @@ func _update_item(delta: float) -> void:
 
 
 func _try_spawn() -> void:
+	if stage == null or start_marker == null or offload_marker == null:
+		return
+		
+		
+	
 	if image_queue.is_empty():
 		return
 	
