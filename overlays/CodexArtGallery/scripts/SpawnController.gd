@@ -173,7 +173,7 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	item.custom_minimum_size = ITEM_SIZE
 	
 	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color.ROSY_BROWN
+	panel.bg_color = Color.TRANSPARENT
 	item.add_theme_stylebox_override("panel", panel)
 	
 	var vbox := VBoxContainer.new()
