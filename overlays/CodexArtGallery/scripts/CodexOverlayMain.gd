@@ -8,6 +8,8 @@ var ws := WebSocketPeer.new()
 
 
 func _ready() -> void:
+	print("BUILD STAMP: 2026-02-13 A (transparent pass)")
+	
 	var err = ws.connect_to_url("ws://localhost:3030")
 	if err != OK:
 		print("WebSocket connection failed")
