@@ -19,8 +19,10 @@ config/features=PackedStringArray("4.5", "Forward Plus")
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/resizable=false
+window/size/transparent=true
 window/stretch/mode="viewport"
 
 [rendering]
 
 environment/defaults/default_clear_color=Color(0, 0, 0, 0)
+viewport/transparent_background=true

@@ -13,7 +13,7 @@ html, body, #canvas {
 
 body {
 	color: white;
-	background-color: black;
+	background-color: rgba(0,0,0,0);
 	overflow: hidden;
 	touch-action: none;
 }
@@ -109,10 +109,23 @@ body {
 			<progress id="status-progress"></progress>
 			<div id="status-notice"></div>
 		</div>
+        <script>
+            (function () {
+              const orig = HTMLCanvasElement.prototype.getContext;
+              HTMLCanvasElement.prototype.getContext = function(type, attrs) {
+                if (type === "webgl2" || type === "webgl") {
+                  attrs = attrs || {};
+                  attrs.alpha = true;                 // <-- critical
+                  if (attrs.premultipliedAlpha === undefined) attrs.premultipliedAlpha = false;
+                }
+                return orig.call(this, type, attrs);
+              };
+            })();
+        </script>
 
-		<script src="CodexArtGallery.js"></script>
+        <script src="CodexArtGallery.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"CodexArtGallery","experimentalVK":false,"fileSizes":{"CodexArtGallery.pck":6292772,"CodexArtGallery.wasm":36145869},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"CodexArtGallery.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"CodexArtGallery","experimentalVK":false,"fileSizes":{"CodexArtGallery.pck":6405172,"CodexArtGallery.wasm":36145869},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"CodexArtGallery.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
