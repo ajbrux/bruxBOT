@@ -8,6 +8,8 @@ var ws := WebSocketPeer.new()
 
 
 func _ready() -> void:
+	get_viewport().transparent_bg = true
+	RenderingServer.set_default_clear_color(Color(0, 0, 0, 0))
 	print("BUILD STAMP: 2026-02-13 A (transparent pass)")
 	
 	var err = ws.connect_to_url("ws://localhost:3030")
