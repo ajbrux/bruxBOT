@@ -2,7 +2,84 @@
 class_name CallAnimator
 extends RefCounted
 
+enum State { IDLE, CALLING, DISPLAYED, RETURNING }
+
+var state: State = State.IDLE
 var call_progress: float = 0.0
+
+var _timer: float = 0.0
+var _travel_time: float = 1.0
+var _hold_time: float = 0.0
+var _wrapper: Control
+var _fade_node: CanvasItem
+var _cap: Dictionary
+var _display_pos: Vector2 = Vector2.ZERO
+var _return_start_gp: Vector2 = Vector2.ZERO
+
+
+func begin_call(
+	wrapper: Control,
+	fade_node: CanvasItem,
+	cap: Dictionary,
+	display_pos: Vector2,
+	travel_time: float,
+	hold_time: float
+) -> void:
+	_wrapper = wrapper
+	_fade_node = fade_node
+	_cap = cap
+	_display_pos = display_pos
+	_travel_time = max(0.001, travel_time)
+	_hold_time = max(0.0, hold_time)
+
+	_timer = 0.0
+	call_progress = 0.0
+	state = State.CALLING
+
+
+func update(delta: float) -> bool:
+	# returns true while active, false when idle
+	if state == State.IDLE:
+		return false
+	
+	_timer += delta
+	
+	match state:
+		State.CALLING:
+			var t: float = clamp(_timer / _travel_time, 0.0, 1.0)
+			update_calling(_wrapper, _fade_node, _cap, _display_pos, t)
+			if t >= 1.0:
+				state = State.DISPLAYED
+				_timer = 0.0
+			return true
+	
+		State.DISPLAYED:
+			if _timer >= _hold_time:
+				state = State.RETURNING
+				_timer = 0.0
+				_return_start_gp = _wrapper.global_position
+
+		State.RETURNING:
+			var t: float = clamp(_timer / _travel_time, 0.0, 1.0)
+			update_returning(_wrapper, _fade_node, _cap, _return_start_gp, t)
+			if t >= 1.0:
+				CallAnimator.restore_to_original_parent(_wrapper, _cap)
+				_wrapper.scale = Vector2.ONE
+				
+				if _fade_node != null:
+					_fade_node.modulate.a = 1.0
+				
+				state = State.IDLE
+				_timer = 0.0
+				
+				_wrapper = null
+				_fade_node = null
+				_cap = {}
+				_display_pos = Vector2.ZERO
+				_return_start_gp = Vector2.ZERO
+	
+	return true
+
 
 #animations
 func _ease_in_out(t: float) -> float:

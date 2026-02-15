@@ -29,22 +29,12 @@ var label: Label
 var disarmed_color: Color = Color.BLACK
 var armed_color: Color = Color.GOLD
 
-# var original_local_position: Vector2
 var sprite_wrapper: Control
-# var original_parent: Node
-# var original_index: int
-
-
-enum CallState { NORMAL, CALLING, DISPLAYED, RETURNING }
-var call_timer: float
 var call_progress: float
-var display_position: Vector2
-var return_start_position: Vector2
 var display_layer: Control
 var reparent_cap: Dictionary
 
 
-var call_state: CallState = CallState.NORMAL
 
 
 func setup(
@@ -70,50 +60,15 @@ func setup(
 
 func update_item(delta: float, speed_multiplier: float) -> bool:
 	progress += (delta / travel_time_s) * speed_multiplier
-	
 	var p := start_pos.lerp(off_pos, progress)
 	global_position = p - size * 0.5
 	
-	if call_state == CallState.CALLING:
-		call_timer += delta
-		
-		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
-		call_anim.update_calling(sprite_wrapper, label, reparent_cap, display_position, t)
+	if call_anim.update(delta):
 		call_progress = call_anim.call_progress
-		
-		if t >= 1.0:
-			call_state = CallState.DISPLAYED
-			call_timer = 0.0
-			print(name, " DISPLAYED")
-		
-		return true
-	
-	if call_state == CallState.DISPLAYED:
-		call_timer += delta
-		
-		if call_timer >= display_hold_time:
-			call_state = CallState.RETURNING
-			call_timer = 0.0
-			return_start_position = sprite_wrapper.global_position
-			print(name, " RETURNING")
-		
-		return true
-	
-	if call_state == CallState.RETURNING:
-		call_timer += delta
-		
-		var t: float = clamp(call_timer / call_travel_time, 0.0, 1.0)
-		call_anim.update_returning(sprite_wrapper, label, reparent_cap, return_start_position, t)
-		call_progress = call_anim.call_progress
-		
-		if t >= 1.0:
-			CallAnimator.restore_to_original_parent(sprite_wrapper, reparent_cap)
-			sprite_wrapper.scale = Vector2.ONE
-			label.modulate.a = 1.0
-			call_state = CallState.NORMAL
-			print(name, "RETURN COMPLETE")
-		
-		return true
+		if call_anim.state == CallAnimator.State.IDLE:
+			print(name, " RETURN COMPLETE")
+	else:
+		call_progress = 0.0
 	
 	if progress >= 1.0:
 		return false
@@ -132,19 +87,22 @@ func update_item(delta: float, speed_multiplier: float) -> bool:
 
 
 func start_call(display_pos: Vector2, p_display_layer: Control) -> void:
-	
-	if call_state != CallState.NORMAL:
+	if call_anim.state != CallAnimator.State.IDLE:
 		return
 	
 	display_layer = p_display_layer
-	display_position = display_pos
 	
 	reparent_cap = CallAnimator.capture_reparent(sprite_wrapper)
 	CallAnimator.preserve_world_position_across_reparent(sprite_wrapper, display_layer)
 	
-	call_state = CallState.CALLING
-	call_timer = 0.0
-	call_progress = 0.0
+	call_anim.begin_call(
+		sprite_wrapper,
+		label,
+		reparent_cap,
+		display_pos,
+		call_travel_time,
+		display_hold_time
+	)
 	
 	print(name, " CALLED")
 

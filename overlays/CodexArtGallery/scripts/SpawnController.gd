@@ -98,7 +98,7 @@ func _update_item(delta: float) -> void:
 			item.queue_free()
 			live_items.remove_at(i)
 	
-	if called_item and called_item.call_state == ScrollingItem.CallState.NORMAL:
+	if called_item and called_item.call_anim.state == CallAnimator.State.IDLE:
 		scroll_speed_multiplier = lerp(scroll_speed_multiplier, 1.0, delta * 3.0)
 		called_item = null
 		print("Call cycle complete. Scroll restored.")
@@ -225,7 +225,7 @@ func start_call_by_title(title: String) -> void:
 	
 	for item in live_items:
 		if item.focused \
-		and item.call_state == ScrollingItem.CallState.NORMAL \
+		and item.call_anim.state == CallAnimator.State.IDLE \
 		and item.name.to_upper() == title:
 			
 			called_item = item
