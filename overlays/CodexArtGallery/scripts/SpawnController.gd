@@ -10,7 +10,7 @@ class_name SpawnController
 @export var display_marker_path: NodePath = ^"../CanvasLayer/Markers/DisplayMarker"
 @export var display_layer_path: NodePath = ^"../CanvasLayer/DisplayLayer"
 
-@export var travel_time_s: float = 20
+@export var travel_time_s: float = 35
 @export var spacing_px: float = 175
 @export var focus_scale: float = 1
 @export var focus_width_t: float = 0.3
