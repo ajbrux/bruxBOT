@@ -27,7 +27,7 @@ var focused := false
 
 var label: Label
 var disarmed_color: Color = Color.ORANGE_RED
-var armed_color: Color = Color.DARK_ORANGE
+var armed_color: Color = Color.MEDIUM_SEA_GREEN
 
 var sprite_wrapper: Control
 var call_progress: float

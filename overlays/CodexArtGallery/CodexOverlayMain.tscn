@@ -18,16 +18,16 @@ offset_bottom = 40.0
 [node name="Markers" type="Node2D" parent="CanvasLayer"]
 
 [node name="StartMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(234, 1218)
+position = Vector2(240, 1216)
 
 [node name="LoadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(234, 1154)
+position = Vector2(240, 1152)
 
 [node name="OffloadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(234, -126)
+position = Vector2(240, -320)
 
 [node name="FocusMarker" type="Marker2D" parent="CanvasLayer/Markers"]
-position = Vector2(234, 546)
+position = Vector2(240, 552)
 
 [node name="DisplayLayer" type="Control" parent="CanvasLayer"]
 layout_mode = 3
