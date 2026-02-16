@@ -11,7 +11,7 @@ class_name SpawnController
 @export var display_layer_path: NodePath = ^"../CanvasLayer/DisplayLayer"
 
 @export var travel_time_s: float = 19
-@export var spacing_px: float = 170
+@export var spacing_px: float = 175
 @export var focus_scale: float = 1
 @export var focus_width_t: float = 0.35
 
@@ -26,7 +26,7 @@ var _dbg_frames_left := 180
 
 var scroll_speed_multiplier: float = 1.0
 var display_marker: Marker2D
-const ITEM_SIZE := Vector2(300, 160)
+const ITEM_SIZE := Vector2(475, 160)
 
 var stage: Control
 var display_layer: Control
@@ -248,6 +248,7 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	var label := Label.new()
 	label.text = "!" + title
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color.ORANGE_RED)
 	label.add_theme_font_size_override("font_size", 29)
 	
 	label_center.add_child(label)

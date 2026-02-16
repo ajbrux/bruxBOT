@@ -26,8 +26,8 @@ var loaded := true
 var focused := false
 
 var label: Label
-var disarmed_color: Color = Color.BLACK
-var armed_color: Color = Color.GOLD
+var disarmed_color: Color = Color.ORANGE_RED
+var armed_color: Color = Color.DARK_ORANGE
 
 var sprite_wrapper: Control
 var call_progress: float
