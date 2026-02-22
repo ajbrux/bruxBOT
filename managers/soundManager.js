@@ -1,14 +1,9 @@
 //managers/soundManager.js
-import player from 'play-sound';
+import sound from 'sound-play';
 
 export class SoundManager {
     constructor(SOUND_MAP) {
         this.SOUND_MAP = SOUND_MAP;
-        this.player = player ({players: ['ffplay']});
-    }
-
-    hasSound(name) {
-        return !!this.SOUND_MAP[name];
     }
 
     playSound(commandCall) {
@@ -16,10 +11,7 @@ export class SoundManager {
 
     if (soundPath) {
         try {
-            this.player.play(
-                soundPath,
-                { ffplay: ['-nodisp', '-autoexit', '-loglevel', 'error']}
-                )
+            sound.play(soundPath).catch(() => {});
             console.log('played sound:', soundPath);
         } catch (err) {
             console.log('play_failed:', err);
