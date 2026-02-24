@@ -10,6 +10,8 @@ import { SoundMapper } from './mappers/soundMapper.js';
 import { RaidMapper } from './mappers/raidMapper.js';
 import { ImageMapper } from './mappers/imageMapper.js';
 import { OverlayServer } from './servers/overlayServer.js';
+import { detectOS } from './osdetector/osDetector.js';
+import { initSoundPlayer } from './audioplayers/soundPlayer.js'
 
 
 //spool up local overlay server
@@ -34,6 +36,9 @@ const client = new tmi.Client({
     identity: { username, password: token },
     channels: [channel],
 });
+
+const OS = detectOS();
+initSoundPlayer(OS);
 
 //map sounds directory
 const SOUND_MAP = SoundMapper();
