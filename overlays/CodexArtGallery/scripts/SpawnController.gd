@@ -88,7 +88,6 @@ func _process(delta: float) -> void:
 	
 	
 	
-	
 	if _dbg and _dbg_frames_left > 0:
 		_dbg_frames_left -= 1
 		if _dbg_frames_left % 30 == 0:
@@ -100,6 +99,11 @@ func _process(delta: float) -> void:
 	
 	if called_item:
 		var slow_strength := 0.8
+		var t: float = clamp(called_item.call_progress, 0.0, 1.0)
+		
+		if called_item.call_anim.state == CallAnimator.State.RETURNING:
+			t = 1.0 - t
+		
 		scroll_speed_multiplier = 1.0 - (called_item.call_progress * slow_strength)
 	else:
 		scroll_speed_multiplier = lerp(scroll_speed_multiplier, 1.0, delta * 3.0)
@@ -246,7 +250,7 @@ func _configure_item_visuals(item: ScrollingItem, title: String, texture: Textur
 	label_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var label := Label.new()
-	label.text = "!" + title
+	label.text = "!" + title.to_lower()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color.ORANGE_RED)
 	label.add_theme_font_size_override("font_size", 29)
