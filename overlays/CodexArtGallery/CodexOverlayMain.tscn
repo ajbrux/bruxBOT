@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3 uid="uid://cg6wc5q1mvtfe"]
+
+[ext_resource type="Script" uid="uid://dtyaeioiwcy0y" path="res://scripts/CodexOverlayMain.gd" id="1_6q8qb"]
+[ext_resource type="Script" uid="uid://cio1bqplhbugn" path="res://scripts/ImageLoader.gd" id="2_boesq"]
+[ext_resource type="Script" uid="uid://bwxju4y8crfq1" path="res://scripts/SpawnController.gd" id="3_clchk"]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_6q8qb")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Stage" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Markers" type="Node2D" parent="CanvasLayer"]
+
+[node name="StartMarker" type="Marker2D" parent="CanvasLayer/Markers"]
+position = Vector2(240, 1216)
+
+[node name="LoadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
+position = Vector2(240, 1152)
+
+[node name="OffloadMarker" type="Marker2D" parent="CanvasLayer/Markers"]
+position = Vector2(240, -320)
+
+[node name="FocusMarker" type="Marker2D" parent="CanvasLayer/Markers"]
+position = Vector2(240, 552)
+
+[node name="DisplayLayer" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="DisplayMarker" type="Marker2D" parent="CanvasLayer/DisplayLayer"]
+z_index = 1
+position = Vector2(310, 35)
+
+[node name="ImageLoader" type="Node" parent="."]
+script = ExtResource("2_boesq")
+
+[node name="ImageRequest" type="HTTPRequest" parent="ImageLoader"]
+
+[node name="ImageFetcher" type="HTTPRequest" parent="ImageLoader"]
+
+[node name="SpawnController" type="Node" parent="."]
+script = ExtResource("3_clchk")
+display_marker_path = NodePath("../CanvasLayer/DisplayLayer/DisplayMarker")
