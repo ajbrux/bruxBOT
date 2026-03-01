@@ -1,7 +1,7 @@
 //audioplayers/lin.js
 import { spawn } from 'node:child_process';
 
-const DEFAULT_FFPLAY = ['-nodisp', '-autoexit', 'loglevel', 'error'];
+const DEFAULT_FFPLAY = ['-nodisp', '-autoexit', '-loglevel', 'error'];
 
 export async function play(soundPath, { ffplayOptions = DEFAULT_FFPLAY } = {}) {
     return new Promise( (resolve) => {
