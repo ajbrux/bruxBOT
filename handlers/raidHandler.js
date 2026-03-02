@@ -1,21 +1,31 @@
-//handlers/raidHandler.js
-import sound from 'sound-play';
+// src/handlers/raidHandler.js
+import { play as playAudio } from '../audioplayers/soundPlayer.js';
 
-export function RaidHandler (client, RAIDS_MAP) {
-        client.on('raided', async (_chan, raider, viewers) => {
-            console.log(`${raider} raiding with ${viewers}`);
+let raidQueue = Promise.resolve();
 
-            //raid alert
-            const raidSound = RAIDS_MAP[raider.toLowerCase() ] || RAIDS_MAP['raid'];
-            if (raidSound) {
-                try {
-                    sound.play(raidSound).catch(() => {});
-                    console.log('played raid sound:', raidSound);
-                } catch (err) {
-                    console.log('raid_play_failed:', err);
-                }
-            } else {
-                console.log('missing raid sound: raid.mp3 or raid.wav');
-            }
-        });
+export function RaidHandler(client, RAIDS_MAP) {
+    client.on('raided', (_chan, raider, viewers) => {
+        console.log(`${raider} raiding with ${viewers}`);
+
+    const key = String(raider || '').trim().toLowerCase();
+    const raidSound = RAIDS_MAP[key] || RAIDS_MAP['raid'];
+
+    if (!raidSound) {
+        console.log('missing raid sound: raid.mp3 or raid.wav');
+        return;
     }
+
+    raidQueue = raidQueue.then(async () => {
+        try {
+            const ok = await playAudio(raidSound, {
+            ffplayOptions: ['-nodisp', '-autoexit', '-loglevel', 'error'],
+            });
+
+            if (ok) console.log('played raid sound:', raidSound);
+            else console.log('raid_play_failed:', raidSound);
+        } catch (err) {
+            console.log('raid_play_failed:', err?.message || err);
+        }
+        });
+    });
+}

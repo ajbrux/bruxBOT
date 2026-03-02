@@ -1,0 +1,16 @@
+### Godot ###
+.godot/
+.import/
+export/
+*.pck
+*.exe
+*.zip
+
+### Temp and backup ###
+*.log
+*.tmp
+*.bak
+
+### OS ###
+.DS_Store
+Thumbs.db

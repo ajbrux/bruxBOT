@@ -2,13 +2,23 @@
 import tmi from 'tmi.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import sound from 'sound-play';
 import 'dotenv/config';
 import { SoundManager } from './managers/soundManager.js';
 import { ChatHandler } from './handlers/chatHandler.js';
 import { RaidHandler } from './handlers/raidHandler.js';
 import { SoundMapper } from './mappers/soundMapper.js';
 import { RaidMapper } from './mappers/raidMapper.js';
+import { ImageMapper } from './mappers/imageMapper.js';
+import { OverlayServer } from './servers/overlayServer.js';
+import { detectOS } from './osdetector/osDetector.js';
+import { initSoundPlayer } from './audioplayers/soundPlayer.js'
+
+
+//spool up local overlay server
+const OVERLAY_PORT = Number(process.env.OVERLAY_PORT) || 3030;
+const IMAGES_META = ImageMapper({ slotHeight: 120, gap: 12 });
+const overlay = OverlayServer({ port: OVERLAY_PORT});
+
 
 
 //read config from .env
@@ -27,6 +37,9 @@ const client = new tmi.Client({
     channels: [channel],
 });
 
+const OS = detectOS();
+initSoundPlayer(OS);
+
 //map sounds directory
 const SOUND_MAP = SoundMapper();
 console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
@@ -35,9 +48,17 @@ console.log('assets/sounds directory loaded', Object.keys(SOUND_MAP));
 const RAIDS_MAP =RaidMapper();
 console.log('assets/raids directory loaded', Object.keys(RAIDS_MAP));
 
+const IMAGE_MAP = {}
+const imageFiles = IMAGES_META.files || [];
+
+for(const f of imageFiles) {
+    IMAGE_MAP[f.id.toLowerCase()] = f;
+}
+console.log('assets/images directory loaded', Object.keys(IMAGE_MAP));
+
 const soundManager = new SoundManager(SOUND_MAP);
 
-ChatHandler(client, soundManager);
+ChatHandler(client, soundManager, overlay, IMAGE_MAP);
 RaidHandler(client, RAIDS_MAP);
 
 

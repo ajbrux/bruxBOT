@@ -1,21 +1,32 @@
 //managers/soundManager.js
-import sound from 'sound-play';
+import { play as playAudio } from '../audioplayers/soundPlayer.js';
 
 export class SoundManager {
     constructor(SOUND_MAP) {
         this.SOUND_MAP = SOUND_MAP;
+        this.ffplayOptions = ['-nodisp', '-autoexit', '-loglevel', 'error']
     }
 
-    playSound(commandCall) {
-    const soundPath = this.SOUND_MAP[commandCall];
+    hasSound(name) {
+    const key = String(name || '').trim().toLowerCase();
+        return !!this.SOUND_MAP[name];
+    }
 
-    if (soundPath) {
-        try {
-            sound.play(soundPath).catch(() => {});
-            console.log('played sound:', soundPath);
-        } catch (err) {
-            console.log('play_failed:', err);
+    async playSound(commandCall) {
+        const key = String(commandCall || '').trim().toLowerCase();
+        const soundPath = this.SOUND_MAP[key];
+
+        if (!soundPath) {
+            console.log('unknown command: ', key);
+            return false
         }
-    } else {
-    console.log('unknown command:', commandCall);
-}}};
+
+        const ok = await playAudio(soundPath, { ffplayOptions: this.ffplayOptions });
+        if (ok)
+            console.log('played sound: ', soundPath);
+        else {
+            console.log('play_failed:', soundPath);
+        return ok;
+        }
+    }
+}
