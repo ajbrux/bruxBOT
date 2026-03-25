@@ -35,6 +35,10 @@ export function OverlayServer({ port = 3030, log = console } = {}) {
     const overlayRoot = path.resolve('overlays', 'CodexArtGallery', 'html');
     const imagesDir = path.resolve('assets', 'images');
 
+    const igRoot = path.resolve('overlays', 'instagrampost');
+    app.use('/instagrampost', express.static(igRoot));
+    app.get('/instagrampost', (_req, res) => res.sendFile(path.join(igRoot, 'instagrampost.html')));
+
     app.use('/overlay', express.static(overlayRoot));
     app.get('/overlay', (_req, res) => {
         res.sendFile(path.join(overlayRoot, 'CodexArtGallery.html'));

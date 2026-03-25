@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Instagram Post Overlay</title>
+    <style>
+        :root{
+          /* Canvas size (matches your sketch) */
+          --w: 1080px;
+          --h: 512px;
+
+          /* Layout split */
+          --left-w: 640px;   /* images area */
+          --right-w: calc(var(--w) - var(--left-w));
+
+          /* Aesthetics */
+          --bg: rgba(0,0,0,0);      /* transparent for OBS */
+          --panel: rgba(18,18,18,0.65);
+          --panel-strong: rgba(18,18,18,0.82);
+          --text: rgba(255,255,255,0.92);
+          --muted: rgba(255,255,255,0.70);
+
+          --radius: 18px;
+          --gap: 14px;
+
+          /* Timing defaults (override with query params if you want) */
+          --fade-ms: 900ms;
+        }
+
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: var(--w);
+          height: var(--h);
+          background: var(--bg);
+          overflow: hidden;
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Root canvas */
+        .wrap {
+          width: var(--w);
+          height: var(--h);
+          display: grid;
+          grid-template-columns: var(--left-w) var(--right-w);
+          gap: var(--gap);
+          padding: var(--gap);
+          box-sizing: border-box;
+          background: var(--bg);
+        }
+
+        /* LEFT: image slideshow */
+        .media {
+          position: relative;
+          border-radius: var(--radius);
+          overflow: hidden;
+          background: rgba(0,0,0,0.20);
+        }
+
+        .slide {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0;
+          transition: opacity var(--fade-ms) ease-in-out;
+          will-change: opacity;
+        }
+        .slide.on {
+          opacity: 1;
+        }
+
+        /* Profile badge (top-left, like IG) */
+        .profile {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 12px 8px 8px;
+          background: rgba(0,0,0,0.45);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 999px;
+          backdrop-filter: blur(6px);
+        }
+
+        .pfp {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid rgba(255,255,255,0.80);
+          background: rgba(255,255,255,0.08);
+          flex: 0 0 auto;
+        }
+
+        .handle {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.1;
+        }
+        .handle .name {
+          font-weight: 700;
+          font-size: 14px;
+          color: var(--text);
+          letter-spacing: 0.2px;
+        }
+        .handle .meta {
+          font-size: 12px;
+          color: var(--muted);
+        }
+
+        /* RIGHT: caption */
+        .captionPanel {
+          border-radius: var(--radius);
+          background: var(--panel);
+          border: 1px solid rgba(255,255,255,0.10);
+          overflow: hidden;
+          position: relative;
+          padding: 14px 14px 14px 14px;
+          box-sizing: border-box;
+          backdrop-filter: blur(8px);
+        }
+
+        .captionHeader {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding-bottom: 10px;
+          margin-bottom: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .captionHeader .pfpSmall {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 1px solid rgba(255,255,255,0.30);
+          background: rgba(255,255,255,0.08);
+        }
+
+        .captionHeader .title {
+          color: var(--text);
+          font-weight: 700;
+          font-size: 13px;
+        }
+
+        .captionViewport {
+          position: relative;
+          height: calc(var(--h) - (2 * var(--gap)) - 14px - 10px - 10px - 32px); /* rough, but stable */
+          overflow: hidden;
+          border-radius: 12px;
+          background: var(--panel-strong);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .captionScroller {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          transform: translateY(0);
+          opacity: 1;
+          transition: opacity 500ms ease-in-out;
+          will-change: transform, opacity;
+        }
+
+        .captionText {
+          white-space: pre-wrap; /* keeps your caption formatting */
+          color: var(--text);
+          font-size: 14px;
+          line-height: 1.35;
+          padding: 14px;
+          box-sizing: border-box;
+        }
+
+        .footerHint {
+          position: absolute;
+          right: 12px;
+          bottom: 10px;
+          font-size: 11px;
+          color: rgba(255,255,255,0.55);
+          user-select: none;
+          pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="media">
+        <!-- Slides injected by JS -->
+        <div class="profile">
+            <img class="pfp" src="./images/pfp.jpg" alt="pfp">
+            <div class="handle">
+                <div class="name" id="handleName">artist</div>
+                <div class="meta" id="handleMeta">instagram post</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="captionPanel">
+        <div class="captionHeader">
+            <img class="pfpSmall" src="./images/pfp.jpg" alt="pfp small">
+            <div class="title" id="captionTitle">Caption</div>
+        </div>
+
+        <div class="captionViewport" id="capViewport">
+            <div class="captionScroller" id="capScroller">
+                <div class="captionText" id="capText">Loading caption…</div>
+            </div>
+        </div>
+
+        <div class="footerHint" id="footerHint"></div>
+    </div>
+</div>
+
+<script>
+    // -------- Settings (can override via URL query params) ----------
+    // Example: instagrampost.html?img=5000&scroll=28&pause=1200
+    const qs = new URLSearchParams(location.search);
+
+    const IMAGE_COUNT = Number(qs.get("count") || 8);
+    const IMAGE_INTERVAL_MS = Number(qs.get("img") || 4500);  // time before switching
+    const FADE_MS = Number(qs.get("fade") || 900);           // crossfade duration
+    const SCROLL_PX_PER_SEC = Number(qs.get("scroll") || 22); // caption scroll speed
+    const LOOP_FADE_MS = Number(qs.get("loopfade") || 450);   // fade out/in at loop
+    const LOOP_PAUSE_MS = Number(qs.get("pause") || 650);     // pause between loops
+
+    document.documentElement.style.setProperty("--fade-ms", `${FADE_MS}ms`);
+
+    const media = document.querySelector(".media");
+    const capText = document.getElementById("capText");
+    const capScroller = document.getElementById("capScroller");
+    const capViewport = document.getElementById("capViewport");
+    const footerHint = document.getElementById("footerHint");
+
+    // -------- Slideshow ----------
+    const slides = [];
+    let slideIndex = 0;
+
+    function buildSlides() {
+      for (let i = 1; i <= IMAGE_COUNT; i++) {
+        const img = document.createElement("img");
+        img.className = "slide";
+        img.src = `./images/${i}.jpg`;
+        img.alt = `slide ${i}`;
+        media.appendChild(img);
+        slides.push(img);
+      }
+      if (slides[0]) slides[0].classList.add("on");
+    }
+
+    function nextSlide() {
+      if (slides.length <= 1) return;
+      const prev = slides[slideIndex];
+      slideIndex = (slideIndex + 1) % slides.length;
+      const next = slides[slideIndex];
+
+      // Turn on next first (crossfade)
+      next.classList.add("on");
+      // Then turn off prev after a tick so transitions apply cleanly
+      setTimeout(() => prev.classList.remove("on"), 20);
+    }
+
+    // -------- Caption loader ----------
+    async function loadCaption() {
+      try {
+        const res = await fetch("./caption", { cache: "no-store" });
+        const txt = await res.text();
+        capText.textContent = txt.trim();
+      } catch (e) {
+        capText.textContent = "Could not load caption file. (Check ./caption path)";
+        console.error(e);
+      }
+    }
+
+    // -------- Caption auto-scroll loop ----------
+    let y = 0;
+    let lastT = performance.now();
+    let looping = false;
+
+    function resetCaptionInstant() {
+      y = 0;
+      capScroller.style.transform = `translateY(${y}px)`;
+    }
+
+    async function doLoopReset() {
+      if (looping) return;
+      looping = true;
+
+      // Fade out
+      capScroller.style.opacity = "0";
+      await new Promise(r => setTimeout(r, LOOP_FADE_MS));
+
+      // Jump to top
+      resetCaptionInstant();
+
+      // Small pause (optional)
+      await new Promise(r => setTimeout(r, LOOP_PAUSE_MS));
+
+      // Fade in
+      capScroller.style.opacity = "1";
+      await new Promise(r => setTimeout(r, LOOP_FADE_MS));
+
+      looping = false;
+    }
+
+    function tickCaption(now) {
+      const dt = (now - lastT) / 1000;
+      lastT = now;
+
+      if (!looping) {
+        y -= SCROLL_PX_PER_SEC * dt;
+        capScroller.style.transform = `translateY(${y}px)`;
+
+        // Determine when bottom has passed the viewport
+        const viewportH = capViewport.clientHeight;
+        const contentH = capText.scrollHeight;
+
+        // If content is shorter than viewport, don't scroll (but still loop fade occasionally)
+        if (contentH <= viewportH + 4) {
+          footerHint.textContent = "";
+          y = 0;
+          capScroller.style.transform = `translateY(${y}px)`;
+        } else {
+          footerHint.textContent = `scroll ${Math.round(SCROLL_PX_PER_SEC)}px/s`;
+          const bottomY = y + contentH;
+          if (bottomY <= 0) {
+            // Completely scrolled past
+            doLoopReset();
+          }
+        }
+      }
+
+      requestAnimationFrame(tickCaption);
+    }
+
+    // -------- Boot ----------
+    (async function main() {
+      buildSlides();
+      await loadCaption();
+
+      // Start slideshow timer
+      setInterval(nextSlide, IMAGE_INTERVAL_MS);
+
+      // Start caption animation
+      resetCaptionInstant();
+      requestAnimationFrame(tickCaption);
+    })();
+</script>
+</body>
+</html>

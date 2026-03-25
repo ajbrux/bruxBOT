@@ -61,6 +61,15 @@ const soundManager = new SoundManager(SOUND_MAP);
 ChatHandler(client, soundManager, overlay, IMAGE_MAP);
 RaidHandler(client, RAIDS_MAP);
 
+// DEBUG: simulate a raid from the console after startup
+if (process.env.DEBUG_RAID === '1') {
+  setTimeout(() => {
+    const fakeRaider = process.env.DEBUG_RAIDER || 'someStreamer';
+    const fakeViewers = Number(process.env.DEBUG_VIEWERS || 42);
+    client.emit('raided', channel, fakeRaider, fakeViewers);
+    console.log('[debug] emitted raided:', fakeRaider, fakeViewers);
+  }, 2000);
+}
 
 //ad warning
 
