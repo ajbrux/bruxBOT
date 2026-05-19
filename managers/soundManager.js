@@ -2,14 +2,14 @@
 import { play as playAudio } from '../audioplayers/soundPlayer.js';
 
 export class SoundManager {
-    constructor(SOUND_MAP) {
-        this.SOUND_MAP = SOUND_MAP;
-        this.ffplayOptions = ['-nodisp', '-autoexit', '-loglevel', 'error']
+    constructor(SOUND_MAP, opts = {}) {
+        this.SOUND_MAP = SOUND_MAP || {};
+        this.ffplayOptions = opts.ffplayOptions || ['-nodisp', '-autoexit', '-loglevel', 'error'];
     }
 
     hasSound(name) {
-    const key = String(name || '').trim().toLowerCase();
-        return !!this.SOUND_MAP[name];
+        const key = String(name || '').trim().toLowerCase();
+        return !!this.SOUND_MAP[key];
     }
 
     async playSound(commandCall) {
@@ -18,7 +18,7 @@ export class SoundManager {
 
         if (!soundPath) {
             console.log('unknown command: ', key);
-            return false
+            return false;
         }
 
         const ok = await playAudio(soundPath, { ffplayOptions: this.ffplayOptions });
@@ -26,7 +26,7 @@ export class SoundManager {
             console.log('played sound: ', soundPath);
         else {
             console.log('play_failed:', soundPath);
-        return ok;
         }
+        return ok;
     }
 }

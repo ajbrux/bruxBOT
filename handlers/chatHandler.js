@@ -1,9 +1,7 @@
 //handlers/chatHandler.js
 export function ChatHandler(client, soundManager, overlay, IMAGE_MAP) {
-    client.on('message', async (_chan, tags, message, self) => {
-    const adbreak = 'Ad break incoming! Have a stretch and tend to your liquids!';
-
-        if (self) return;
+  client.on('message', async (_chan, tags, message, self) => {
+    if (self) return;
 
     //print to terminal
     const name = tags['display-name'] || tags.username || 'unknown';

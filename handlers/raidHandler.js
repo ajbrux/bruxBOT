@@ -3,6 +3,8 @@ import { play as playAudio } from '../audioplayers/soundPlayer.js';
 
 let raidQueue = Promise.resolve();
 
+const RAID_FFPLAY_OPTIONS = ['-nodisp', '-autoexit', '-loglevel', 'error'];
+
 export function RaidHandler(client, RAIDS_MAP) {
     client.on('raided', (_chan, raider, viewers) => {
         console.log(`${raider} raiding with ${viewers}`);
@@ -17,10 +19,7 @@ export function RaidHandler(client, RAIDS_MAP) {
 
     raidQueue = raidQueue.then(async () => {
         try {
-            const ok = await playAudio(raidSound, {
-            ffplayOptions: ['-nodisp', '-autoexit', '-loglevel', 'error'],
-            });
-
+            const ok = await playAudio(raidSound, { ffplayOptions: RAID_FFPLAY_OPTIONS });
             if (ok) console.log('played raid sound:', raidSound);
             else console.log('raid_play_failed:', raidSound);
         } catch (err) {
