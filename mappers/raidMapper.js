@@ -1,7 +1,6 @@
-//mappers/raidMapper.js
+// mappers/raidMapper.js
 import fs from 'node:fs';
 import path from 'node:path';
-
 
 export function RaidMapper(dir = path.resolve('assets', 'raids')) {
     const RAID_MAP = {};
@@ -11,9 +10,10 @@ export function RaidMapper(dir = path.resolve('assets', 'raids')) {
     for (const file of fs.readdirSync(dir)) {
         const lower = file.toLowerCase();
 
-    if (!lower.endsWith('.mp3') && !lower.endsWith('.wav')) {
-        const key = lower.replace(/\.mp3$|\.wav$/, '');
-        RAID_MAP[key] = path.join(dir, file);
+        if (lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+            const key = lower.replace(/\.mp3$|\.wav$/, '');
+            RAID_MAP[key] = path.join(dir, file);
+        }
     }
 
     return RAID_MAP;
